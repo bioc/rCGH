@@ -168,7 +168,7 @@ Optional arguments allow the user to save the following information:
 library(rCGH)
 filePath <- system.file("extdata", "Affy_cytoScan.cyhd.CN5.CNCHP.txt.bz2",
     package = "rCGH")
-cgh <- readAffyCytoScan(filePath, sampleName = "CytoScan-Example",
+cgh <- readAffyCytoScan(filePath, sampleName = "CSc-Example",
                         labName = "myLab")
 @
 
@@ -239,7 +239,8 @@ centering the profile:
 \vspace{5mm}
 
 <<EMnormalize>>=
-cgh <- EMnormalize(cgh)
+# Resricted to 3 groups for the purpose of that demo.
+cgh <- EMnormalize(cgh, G = 3)
 @
 
 \pagebreak
@@ -249,7 +250,7 @@ plotDensity(cgh)
 @
 
 \incfig[h]{figure/plotDensity-1}{.75\textwidth}{plotDensity.}
-{\Rfunction{plotDensity} shows how \emph{EM} has modeled the \emph{LRR}
+{\Rfunction{plotDensity()} shows how \emph{EM} has modeled the \emph{LRR}
 distribution, and what peak has been chosen for centralizing the profile
 (indicated in bold).}
 
@@ -262,7 +263,7 @@ Binary Segmentation algorithm (\emph{CBS}) \cite{Venkatraman} from the
 \Rpackage{DNAcopy} package \cite{dnacopy}.
 \\
 All the steps are wrapped into one unique easy-to-use function,
-\Rfunction{SegmentCGH()}. In order to faclitate its use, all the parameters but
+\Rfunction{segmentCGH()}. In order to faclitate its use, all the parameters but
 one are predefined: \Rcode{UndoSD} is kept free. When this parameter is set to
 \Rcode{NULL} (default), its optimal value is estimated directly from the values.
 However, the user can specify its own value, generaly from 0.5 to 1.5.\\
@@ -290,6 +291,16 @@ head(segTable)
 
 Note that such data format allows GISTIC-compatible inputs to be exported
 \cite{Mermel}.
+
+
+\subsection{Parallelization}
+\Rpackage{rCGH} allows parallelization within \Rfunction{EMnormalise()} and
+\Rfunction{segmentCGH()}, through \Rfunction{mclapply()} from R package
+\Rpackage{parallel}.\\
+By default, \Rcode{nCores} will be set to half of the available cores, but any
+value, from 1 to \Rfunction{detectCores()}, is allowed. However, this feature
+is currently only available on \texttt{Linux} and \texttt{OSX}: \Rcode{nCores}
+will be automatically set to 1 when a \texttt{Windows} system is detected.
 
 
 \subsection{Getting the by-gene table}
@@ -360,12 +371,12 @@ multiplot(cgh, "erbb2")
 
 \incfig[h]{figure/getProfile-1}{.95\textwidth}{Static views.}
 {
-\Rfunction{multiplot} provides static visualisations combining the genomic
+\Rfunction{multiplot()} provides static visualisations combining the genomic
 profile and the LOH.
 }
 
 \subsubsection{Recentering}
-When the profile centering doesn't seem appropriate, the \Rfunction(recenter)
+When the profile centering doesn't seem appropriate, the \Rfunction(recenter())
 function allows the user to choose another centralization value. The new choice
 has to be specified as the peak number to use: peaks are indexed, from 1 to k (
 from left to right) as they appear on the density plot.
@@ -373,16 +384,16 @@ from left to right) as they appear on the density plot.
 \vspace{5mm}
 
 <<recenter, fig.width=7.5, fig.height=3.5, fig.show='hide'>>=
-# Recentering on the first peak with mean higher than LRR=1
-recenter(cgh) <- which(getParam(cgh)$peakMeans>1)[1]
+# Recentering on peak #3
+recenter(cgh) <- 3
 plotProfile(cgh)
 @
 
 \incfig[h]{figure/recenter-1}{.95\textwidth}{Recentering.}
 {
 By default, the EM-based normalization choose a possibly optimal peak to 
-center the profile, but any other peak can be chosen, using \Rfunction{recenter}
-.
+center the profile, but any other peak can be chosen, using
+\Rfunction{recenter()}.
 }
 
 
@@ -393,14 +404,14 @@ control panel: defining the gain/loss thresholds, displaying a gene, resizing
 the y-axis, selecting one unique chromosome, and recentering the entire profile.
 Note that the \emph{Genes table} is updated whenever changes are made through 
 that control panel, e.g. selecting one unique chromosome on the graph filters
-the \emph{Genes table} simultaneously on that chromosome.
+the \emph{Genes table} on that chromosome, simultaneously.
 \\
 The Download buttons, \emph{Plot}, \emph{LOH} and \emph{Table}, allow plots and
 gene table to be exported, as they have been modified.
 
 \pagebreak
 
-The \Rfunction{view} control panel:
+The \Rfunction{view()} control panel:
 \begin{itemize}
     \item{Gene Symbol} : displays any existing gene, providing its official 
     HUGO symbol.
@@ -431,7 +442,7 @@ The \Rfunction{view} control panel:
 view(cgh)
 @
 
-\incfig[h]{view.pdf}{.95\textwidth}{Interactive profile.}
+\incfig[h]{view.png}{.95\textwidth}{Interactive profile.}
 {
 The genomic profile is displayed in the first \emph{CGH profile} tab (left).
 Several changes can be applied using the control panel (in blue). The list of

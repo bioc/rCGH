@@ -23,6 +23,32 @@ test_Segmentation <- function(){
     checkException(rCGH:::.computeSegmentation(L2R, Chr, Pos, NA, NA, 1),
         silent = TRUE)
 }
+test_setter <- function(){
+    filePath <- system.file("extdata", "Affy_cytoScan.cyhd.CN5.CNCHP.txt.bz2",
+                        package = "rCGH")
+    cgh <- readAffyCytoScan(filePath, sampleName = "AffyScHD")
+    setInfo(cgh, "item1") <- 35
+    setInfo(cgh, "item2") <- TRUE
+
+    checkTrue(
+        getInfo(cgh, "item1") == 35 &&
+        getInfo(cgh, "item2") == TRUE &&
+        checkException(setInfo(cgh) <- "whatever", silent = TRUE) &&
+        checkException(setInfo(cgh, "whatever"), silent = TRUE)
+        )
+}
+test_getter <- function(){
+    filePath <- system.file("extdata", "Affy_cytoScan.cyhd.CN5.CNCHP.txt.bz2",
+                        package = "rCGH")
+    cgh <- readAffyCytoScan(filePath, sampleName = "AffyScHD")
+
+    checkTrue(
+        getInfo(cgh, "fileName") == "Affy_cytoScan.cyhd.CN5.CNCHP.txt.bz2" &&
+        getInfo(cgh, "sampleName") == "AffyScHD" &&
+        getInfo(cgh, "analyseDate") == format(Sys.Date(), "%Y-%m-%d") &&
+        getInfo(cgh, "rCGH_version") == as.character(packageVersion("rCGH"))
+        )
+}
 test_Pipeline <- function(){
     # Reading
     filePath <- system.file("extdata", "Affy_cytoScan.cyhd.CN5.CNCHP.txt.bz2",

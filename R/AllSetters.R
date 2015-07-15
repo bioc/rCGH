@@ -6,9 +6,9 @@ setReplaceMethod(f="setInfo",
     signature="rCGH",
     definition=function(object, item = NULL, value = NULL){
     if (is.null(item)){
-        message("No item specified.")
+        stop("No item specified.")
     } else if (is.null(value)){
-        message("No value specified.")
+        stop("No value specified.")
     } else {
         object@info[item] <- value
     }

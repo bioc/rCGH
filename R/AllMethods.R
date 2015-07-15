@@ -61,13 +61,11 @@ setMethod(f="adjustSignal",
                 message("Cy effect adjustment...")
                 }
             cnSet <- .CyAdjust(cnSet, Ref)
-#            if(verbose) cat("Done.\n")
         }
 
         if(GC){
             if(verbose) message("GC% adjustment...")
             cnSet <- .GCadjust(cnSet)
-#            if(verbose) cat("Done.\n")
         }
 
         object@param$CyAdjusted = Cy
@@ -170,8 +168,8 @@ setMethod(f="EMnormalize",
                 message("n.peaks =  ", nG)
                 message("\nGroup parameters:")
                 for (grp in seq_len(nG)){
-                    msg <- sprintf("Grp %s:
-                        prop: %s,\tmean: %s,\tSd: %s,\tpeak height: %s",
+                    msg <- sprintf(
+                    "Grp %s:\nprop: %s,\tmean: %s,\tSd: %s,\tpeak height: %s",
                         grp, round(p[grp], 3), round(m[grp], 3),
                         round(sqrt(s[grp]), 3), round(peaks[grp], 3)
                         )

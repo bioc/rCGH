@@ -1,5 +1,25 @@
 R News
 
+
+rCGH package 0.99.6
+-----------------------
+
+SIGNIFICANT USER-VISIBLE CHANGES
+    * New cytoScan example file
+    * Updated vignette
+    * The rCGH version used is stored in rCGH objects for traceability
+
+NON-VISIBLE CHANGES
+	* Supplementary unittests
+
+
+rCGH package 0.99.5
+-----------------------
+
+SIGNIFICANT USER-VISIBLE CHANGES
+    * R-3.2.1 is the minimal required version
+
+
 rCGH package 0.99.4: First release!
 -----------------------
 

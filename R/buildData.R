@@ -20,6 +20,8 @@ readAgilent <- function(filePath, sampleName=NA, labName=NA, supFlags=TRUE,
     }
     object <- .suppressDuplic(object, verbose)
     object <- .preset(object)
+    setInfo(object, "rCGH_version") <- as.character(packageVersion("rCGH"))
+
     return (object)
 }
 
@@ -49,6 +51,8 @@ readAffySNP6 <- function(filePath, sampleName=NA, labName=NA,
     if(verbose)
         message("Adding presettings...")
     object <- .preset(object)
+    setInfo(object, "rCGH_version") <- as.character(packageVersion("rCGH"))
+
     return (object)
 }
 
@@ -79,5 +83,7 @@ readAffyCytoScan <- function(filePath, sampleName=NA, labName=NA,
     if(verbose) 
         message("Adding presettings...")
     object <- .preset(object)
+    setInfo(object, "rCGH_version") <- as.character(packageVersion("rCGH"))
+
     return (object)
 }
