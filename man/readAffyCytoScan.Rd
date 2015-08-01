@@ -5,7 +5,7 @@
 
 \description{
 A constructor function which takes an Affymetrix cytoScanHD cychp.txt
-(or cnchp.txt) file as input, possibly in a compressed format (.bz2 or gz).\cr
+(or cnchp.txt) file as input, possibly in a compressed format (.bz2 or .gz).\cr
 These files are exported from Chromosome Analysis Suite (ChAS) or Affymetrix
 Power Tools (see \code{References} section).
 }

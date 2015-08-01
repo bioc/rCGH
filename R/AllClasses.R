@@ -8,15 +8,13 @@ setClass(
         info = 'character',
         cnSet = 'data.frame',
         param = 'list',
-        segTable = 'data.frame',
-        byGene = 'data.frame'
+        segTable = 'data.frame'
         ),
     prototype=prototype(
         info = NULL,
         cnSet = data.frame(),
         param = list(),
-        segTable = data.frame(),
-        byGene = data.frame()
+        segTable = data.frame()
         )
 )
 

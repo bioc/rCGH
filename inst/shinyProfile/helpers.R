@@ -152,7 +152,7 @@
         annotate("text",
             x=max(x, 2e8), y=yLabel,
             label=paste0(symbol, '\n(Log2R = ', round(lr, 2), ')'),
-            cex=5, colour="grey25") +
+            cex=5, colour="grey25", fontface = "bold") +
         geom_point(x=x, y=lr, cex=5, pch=19, colour="darkorchid4") +
         geom_point(x=x, y=lr, cex=4, pch=19, colour="antiquewhite") +
         geom_point(x=x, y=lr, cex=1, pch=19, colour=Col) #"darkorchid4"
@@ -194,7 +194,7 @@
 
     return(lohPlot)
 }
-.geneOfInt <- function(segTable, symbol, geneTable){
+.geneOfInt <- function(symbol, geneTable){
     symbol <- toupper(symbol)
     tmp <- geneTable[which(geneTable$symbol == symbol),]
     
@@ -206,6 +206,54 @@
 .renderLink <- function(uid){
     sprintf("<a href=\"http://www.ncbi.nlm.nih.gov/gene/?term=%s[uid]\" 
     target=\"_blank\" style=\"font-size:18px; \">%s</a>", uid, uid)
+}
+
+###########################
+# MERGING SEGMENTS
+.getSegLen <- function(seg){
+    abs(seg$loc.end - seg$loc.start)/1e3
+}
+.smoothSeg <- function(segTable, minSeg){
+    minSeg <- as.numeric(minSeg)
+    splitSegTables <- split(segTable, segTable$chrom)
+    adjustedLocs <- lapply(splitSegTables, function(sst){
+        if(nrow(sst)<2)
+            return(sst)
+        L <- .getSegLen(sst)
+        while(any(L < minSeg)){
+            i <- which(L < minSeg)[1]
+            j <- .getCloser(sst, i)
+            sst <- .mergeSegments(sst, i, j)
+            sst <- sst[-i,]
+            L <- .getSegLen(sst)
+            }
+        return(sst)
+        })
+
+    adjustedLocs <- as.data.frame(do.call(rbind, adjustedLocs))
+    rownames(adjustedLocs) <- seq(1, nrow(adjustedLocs))
+
+    return(adjustedLocs)
+}
+.getCloser <- function(segTable, idx){
+    if(idx==1){
+        return(idx+1)
+    } else if (idx==nrow(segTable)){
+        return(idx-1)
+    } else {
+        delta <- abs(segTable$seg.mean[c(idx-1,idx+1)] - segTable$seg.mean[idx])
+        i <- ifelse(which.min(delta)==1, idx-1, idx+1)
+        return(i)
+    }
+}
+.mergeSegments <- function(segTable, i, j){
+    if(j<i){
+        segTable$loc.end[j] <- segTable$loc.end[i]
+    } else {
+        segTable$loc.start[j] <- segTable$loc.start[i]
+    }
+    segTable$num.mark[j] <- segTable$num.mark[j] + segTable$num.mark[i]
+    return(segTable)
 }
 
 # End helper functions

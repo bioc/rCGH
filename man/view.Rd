@@ -35,6 +35,7 @@
     \itemize{
         \item displaying a specific gene by calling its HUGO symbol.
         \item showing all or one unique chromosome.
+        \item merging segments shorter than a specified value, in Kb.
         \item recentering the entire profile.
         \item rescaling the y-axis.
         \item specifying the Log2Ratio cut offs for defining gains and losses.
@@ -68,7 +69,6 @@ cgh <- readAffyCytoScan(filePath, sampleName = "AffyScHD")
 cgh <- adjustSignal(cgh, nCores=1)
 cgh <- EMnormalize(cgh)
 cgh <- segmentCGH(cgh, nCores=1)
-cgh <- byGeneTable(cgh)
 
 \dontrun{
 # Interactive visalizations

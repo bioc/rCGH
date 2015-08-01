@@ -38,15 +38,11 @@ through specific \code{get} functions.
         }
         \item{\code{param}:}{
         Object of class \code{"list"}: the analysis parameters stored for
-        traceability. \code{"\link{getParam}"}.
+        traceability. See \code{"\link{getParam}"}.
         }
         \item{\code{segTable}:}{
         Object of class \code{"data.frame"}: the segmentation table.
-        \code{"\link{getSegTable}"}.
-        }
-        \item{\code{byGene}:}{
-        Object of class \code{"data.frame"}: a by-gene data set containing the
-        segmentation values. \code{"\link{getByGene}"}.
+        See \code{"\link{getSegTable}"}.
         }
     }
 }

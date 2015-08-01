@@ -12,7 +12,7 @@ A function for performing the Log2Ratio segmentation on an object of class
 
 \usage{
 \S4method{segmentCGH}{rCGH}(object, Smooth=TRUE, UndoSD = NULL,
-minMarks = 8, nCores=NULL, verbose = TRUE)
+minLen = 10, nCores=NULL, verbose = TRUE)
 }
 
 \arguments{
@@ -27,9 +27,9 @@ minMarks = 8, nCores=NULL, verbose = TRUE)
     : numeric. When not specified (default is \code{NULL}), the UndoSD value is
     estimated from the Log2Ratios. See \code{DNAcopy} for details.
     }
-    \item{minMarks}{
-    : numeric. The minimal number of markers for a segment. Shorter segments
-    will be merged to the closest adjacent one, considering the Log2Ratios.
+    \item{minLen}{
+    : numeric. The minimal length for a segment, in Kb. Shorter segments
+    will be merged to the closest adjacent one. Default value is 10(Kb).
     }
     \item{nCores}{
     : numeric. The number of cores to use in order to speed up the computation.

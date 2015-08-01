@@ -2,8 +2,8 @@ Package: rCGH
 Type: Package
 Title: Comprehensive Pipeline for Analyzing and Visualizing Agilent
     and Affymetrix Array-Based CGH Data
-Version: 0.99.6
-Date: 2015-07-14
+Version: 0.99.7
+Date: 2015-07-18
 Authors@R: c(person(given="Frederic", family="Commo", role=c("aut", "cre"), 
     email="frederic.commo@gustaveroussy.fr"))
 Maintainer: Frederic Commo <frederic.commo@gustaveroussy.fr>
@@ -13,8 +13,11 @@ Description: A comprehensive pipeline for analyzing and interactively
     microarrays. As inputs, rCGH supports Agilent dual-color Feature Extraction 
     files (.txt), from 44 to 400K, and Affymetrix SNP6.0 and cytoScan
     probeset.txt, cychp.txt, and cnchp.txt files, exported from ChAS or
-    Affymetrix Power Tools. This package takes over all the steps required for a genomic profile analysis, from reading the files to the segmentation and
-    genes annotations, and provides several visualization functions (static or interactive) which facilitate profiles interpretation.
+    Affymetrix Power Tools. This package takes over all the steps required for
+    a genomic profile analysis, from reading the files to the segmentation and
+    genes annotations, and provides several visualization functions (static or
+    interactive) which facilitate profiles interpretation.\\
+    Input files can be in compressed format, e.g. .bz2 or .gz.
 License: Artistic-2.0
 biocViews: aCGH,CopyNumberVariation,Preprocessing,FeatureExtraction
 Depends: R (>= 3.2.1),methods

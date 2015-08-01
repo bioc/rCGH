@@ -12,7 +12,7 @@ If no allelic difference is available, the genomic profile only is displayed.
 }
 
 \usage{
-\S4method{multiplot}{rCGH}(object, gene=NULL, gain=.5, loss=(-.5),
+\S4method{multiplot}{rCGH}(object, symbol=NULL, gain=.5, loss=(-.5), minLen=10,
 L=matrix(seq(1, 12)), p=c(2/3, 1/3), Title=NULL, ylim=NULL)
 }
 
@@ -20,8 +20,8 @@ L=matrix(seq(1, 12)), p=c(2/3, 1/3), Title=NULL, ylim=NULL)
     \item{object}{
     : An object of class \code{"\linkS4class{rCGH}"}
     }
-    \item{gene}{
-    : character. A valid HUGO symbol (not case sensitive).
+    \item{symbol}{
+    : character. A valid HUGO symbol (case insensitive).
     }
     \item{gain}{
     : numeric. A gain threshold value (in \eqn{Log2(Ratio)}) from where
@@ -30,6 +30,12 @@ L=matrix(seq(1, 12)), p=c(2/3, 1/3), Title=NULL, ylim=NULL)
     \item{loss}{
     : numeric.  A loss threshold value (in \eqn{Log2(Ratio)}) from where
     lossed segments will be shown, in red.
+    }
+    \item{minLen}{
+    : numeric. The mininal length for a segment, in Kb.
+    When \code{NULL} (default), segments are reported as they have been
+    computed with \code{\link{segmentCGH}}, segments shorter than the
+    specified value are re-merged otherwise.
     }
     \item{L}{
     : matrix. A matrix defining how the layout is built. Default is 12 lines.
@@ -76,7 +82,7 @@ cgh <- EMnormalize(cgh)
 cgh <- segmentCGH(cgh, nCores=1)
 
 # Static visalizations
-multiplot(cgh)
+multiplot(cgh, "erbb2")
 
 }
 

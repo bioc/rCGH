@@ -45,7 +45,7 @@ setMethod(f="plotDensity",
 
 setMethod(f="plotProfile",
     signature="rCGH",
-    definition=function(object, gene=NULL, gain=.5, loss=(-.5),
+    definition=function(object, symbol=NULL, gain=.5, loss=(-.5), minLen = 10,
         Title=NULL, ylim=NULL){
 
         hg19 <- hg19
@@ -59,7 +59,7 @@ setMethod(f="plotProfile",
         if(!is.null(ylim) && length(ylim)!=2)
             stop("'ylim' must be NULL or a vector of 2 values.\n")
 
-        segTable <- getSegTable(object)
+        segTable <- getSegTable(object, minLen)
         if(nrow(segTable)==0){
             message("No data available, yet.")
             return(NULL)
@@ -79,9 +79,8 @@ setMethod(f="plotProfile",
 
         idx <- which(segTable$seg.med<= loss | segTable$seg.med>= gain)
         subTable <- segTable[idx,]
-        GLcolors <- ifelse(subTable$seg.med<= loss,
-            'red3',
-            ifelse(subTable$seg.med>= gain, myBlue, NA))
+        GLcolors <- ifelse(subTable$seg.med<= loss, 'red3',
+                            ifelse(subTable$seg.med>= gain, myBlue, NA))
 
         if(is.null(Title)){
             Title = paste(getInfo(object, 'sampleName'),
@@ -103,6 +102,8 @@ setMethod(f="plotProfile",
         X <- as.data.frame(do.call(rbind, X))
 
         cumCentr <- 1/2*hg19$length[1:23] + cumLen
+
+        # main plot
         gPlot <- ggplot(data = X, aes_string(x="loc", y="l2r")) +
             geom_point(pch = 19, cex = 0.1, col = 'grey50') +
             geom_hline(yintercept = 0) +
@@ -133,39 +134,11 @@ setMethod(f="plotProfile",
                 )
 
         if(nrow(subTable)>0)
-            gPlot <- gPlot + 
-                geom_segment(
-                    data = subTable,
-                    aes_string(
-                        x = "loc.start", xend = "loc.end",
-                        y = "seg.med", yend = "seg.med"
-                        ),
-                    colour = GLcolors,
-                    size = 2
-                    )
+            gPlot <- .addSegments(gPlot, subTable, GLcolors)
 
-        if(!is.null(gene)){
-            gene <- toupper(gene)
-            bg <- getByGene(object)
-            if(nrow(bg) == 0){
-                message("No gene information available.")
-                message("You may run 'byGeneTable()' first.")
-                return(gPlot)
-            }
-            v <- bg[grep(sprintf("^%s$", gene), bg$symbol),]
-            if(nrow(v)>0){
-                gPlot <- gPlot + 
-                    geom_point(x=v$genomeStart, y=v$Log2Ratio, cex=6, pch=1) +
-                    annotate( 'text',
-                        x = v$genomeStart,
-                        y = ifelse(v$Log2Ratio+1<ylim[2], v$Log2Ratio+1,
-                            v$Log2Ratio-1),
-                        label = sprintf("%s\n%s", gene,
-                                        format(v$Log2Ratio, digits=2)
-                                        ),
-                        size = 7, colour = 'grey25'
-                        )
-                }
+        if(!is.null(symbol)){
+            bg <- byGeneTable(getSegTable(object, minLen), symbol, TRUE)
+            return(.addTagToPlot(gPlot, bg))
             }
 
         return(gPlot)
@@ -250,15 +223,19 @@ setMethod(f="plotLOH",
 
 setMethod(f="multiplot",
     signature="rCGH",
-    definition=function(object, gene=NULL, gain=.5, loss=(-.5),
+    definition=function(object, symbol=NULL, gain=.5, loss=(-.5), minLen = 10,
         L=matrix(seq(1, 12)), p=c(2/3, 1/3), Title=NULL, ylim=NULL){
 
     if(sum(p)!=1)
         stop("Proportions in 'p' must sum to 1.\n")
 
+    # To initialize the plot window.
+#    plot.new()
+#    dev.off()
+
     n <- nrow(L)
 
-    plot1 <- plotProfile(object, gene, gain, loss, Title, ylim)
+    plot1 <- plotProfile(object, symbol, gain, loss, minLen, Title, ylim)
     if(is.null(plot1))
         stop("Nothing to plot.\n")
 
@@ -317,17 +294,18 @@ setMethod(f="view",
                 "No segmentation table available to generate a genomic profile. 
                     Please run segmentCGH() first.\n"
             )
+        } else{
+            segTable$num.mark <- round(segTable$num.mark/w)
+            saveRDS(segTable, file=file.path(path, "data/st.rds"))
         }
 
-        segTable$num.mark <- round(segTable$num.mark/w)
-        bg <- getByGene(object)
-        if(nrow(bg)==0){
-            message("The byGene table is not available yet.")
-            message("Please run byGeneTable() first.")
-        }
-
-        saveRDS(segTable, file=file.path(path, "data/st.rds"))
-        saveRDS(bg, file=file.path(path, "data/bg.rds"))
+        # bg <- getByGene(object)
+        # if(nrow(bg)==0){
+        #     message("The byGene table is not available yet.")
+        #     message("Please run byGeneTable() first.")
+        # } else{
+        #     saveRDS(bg, file=file.path(path, "data/bg.rds"))
+        # }
 
         cnSet <- getCNset(object)
         if("modelAllDif" %in% colnames(cnSet)){

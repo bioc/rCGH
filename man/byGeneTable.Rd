@@ -1,7 +1,5 @@
 \name{byGeneTable}
 \alias{byGeneTable}
-\alias{byGeneTable-methods}
-\alias{byGeneTable,rCGH-method}
 
 \title{Converting a Segmentation Table Into a By-Gene Table}
 
@@ -15,12 +13,17 @@ the closest centromere.
 }
 
 \usage{
-\S4method{byGeneTable}{rCGH}(object, verbose = TRUE)
+    byGeneTable(segTable, symbol = NULL, verbose = TRUE)
 }
 
 \arguments{
-    \item{object}{
-    : An object of class \code{"\linkS4class{rCGH}"}
+    \item{segTable}{
+    : data frame. A segmentation table exported from an object of class
+    \code{"\linkS4class{rCGH}"}
+    }
+    \item{symbol}{
+    : character. A valid HUGO symbol. When \code{NULL} the full gene table is
+    returned, the corresponding gene information only o/w.
     }
     \item{verbose}{
     : logical. When \code{TRUE} progress is printed.
@@ -41,7 +44,7 @@ Frederic Commo
 }
 
 \seealso{
-\code{\link{getByGene}}
+\code{\link{getSegTable}}
 }
 
 \examples{
@@ -52,8 +55,8 @@ cgh <- readAffyCytoScan(filePath, sampleName = "AffyScHD")
 cgh <- adjustSignal(cgh, nCores=1)
 cgh <- EMnormalize(cgh)
 cgh <- segmentCGH(cgh, nCores=1)
-cgh <- byGeneTable(cgh)
-bygene <- getByGene(cgh)
+st <- getSegTable(cgh)
+bygene <- byGeneTable(st)
 head(bygene)
 
 }

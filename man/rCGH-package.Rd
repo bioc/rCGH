@@ -9,15 +9,16 @@ Comprehensive Pipeline for Analyzing and Visualizing Agilent and
 }
 
 \description{
-A comprehensive pipeline for analyzing and interactively visualizing genomic
-profiles generated through Agilent and Affymetrix microarrays.\cr
-As inputs, rCGH supports Agilent dual-color Feature Extraction
-files (.txt), from 44 to 400K, and Affymetrix probeset.txt, cychp.txt, and
-cnchp.txt files, exported from ChAS or Affymetrix Power Tools.\cr
-This package takes over all the steps required for a genomic profile
-analysis, from reading the files to the segmentation, and provides several
-visualization functions (static or interactive) which facilitate profiles
-interpretation.\cr
+A comprehensive pipeline for analyzing and interactively
+visualizing genomic profiles generated through Agilent and Affymetrix
+microarrays.\cr
+As inputs, rCGH supports Agilent dual-color Feature Extraction files (.txt),
+from 44 to 400K, and Affymetrix SNP6.0 and cytoScan probeset.txt, cychp.txt,
+and cnchp.txt files, exported from ChAS or Affymetrix Power Tools.\cr
+This package takes over all the steps required for a genomic profile analysis,
+from reading the files to the segmentation and genes annotations, and provides
+several visualization functions (static or interactive) which facilitate
+profiles interpretation.\cr
 Input files can be in compressed format, e.g. \code{.bz2} or \code{.gz}.
 }
 
@@ -45,11 +46,10 @@ object1 <- readAffyCytoScan(filePath, sampleName = "AffyScHD")
 object2 <- adjustSignal(object1, nCores=1)
 object3 <- EMnormalize(object2)
 object4 <- segmentCGH(object3, nCores=1)
-object5 <- byGeneTable(object4)
 
 # Static visalizations
-plotDensity(object5)
-multiplot(object5)
+plotDensity(object4)
+multiplot(object4)
 
 \dontrun{
 # Interactive visalizations

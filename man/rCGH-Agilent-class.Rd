@@ -35,10 +35,6 @@ Objects can be created by calls of the form \code{new("rCGH-Agilent", ...)}.
         Object of class \code{"data.frame"}: the segmentation table.
         \code{\link{getSegTable}}.
         }
-        \item{\code{byGene}:}{
-        Object of class \code{"data.frame"}: a by-gene data set containing the
-        segmentation values. \code{\link{getByGene}}.
-        }
     }
 }
 

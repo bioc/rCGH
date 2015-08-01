@@ -4,9 +4,10 @@ require(ggplot2)
 require(grid)
 
 source('helpers.R')
+source('byGene.R')
 cat("Loading files...")
 segTable <- readRDS(file.path(getwd(), "data/st.rds"))
-geneTable <- readRDS(file.path(getwd(), "data/bg.rds"))
+#geneTable <- readRDS(file.path(getwd(), "data/bg.rds"))
 err <- try(load(file.path(getwd(), "data/loh.rda")), silent = TRUE)
 if(inherits(err, "try-error"))
     loh <- NULL
@@ -22,11 +23,14 @@ shinyServer(function(input, output, session) {
 
     reCenterSeg <- reactive({
         seg <- segTable
+        if(as.numeric(input$minSeg) > 10)
+            seg <- .smoothSeg(seg, input$minSeg)
         seg$seg.med <- seg$seg.med + input$center
         return(seg)
         })
 
     reCenterGenes <- reactive({
+        geneTable <- ByGene(reCenterSeg())
         geneTable$Log2Ratio <- geneTable$Log2Ratio + input$center
         return(geneTable)
         })
@@ -40,7 +44,7 @@ shinyServer(function(input, output, session) {
         gPlot <- .addTitle(gPlot, unique(segTable$ID), input$gain, input$loss)
 
         if(!gene$symbol %in% c('NONE', '')){
-            geneAnnot <- try(.geneOfInt(reCenterSeg(), gene$symbol, geneTable),
+            geneAnnot <- try(.geneOfInt(gene$symbol, reCenterGenes()),
                 silent = TRUE)
             if(class(geneAnnot)[1] != 'try-error' & !is.null(geneAnnot)){
                 gPlot <- .addTag(gPlot, geneAnnot, input$Yexpand, input$gain,
@@ -57,7 +61,7 @@ shinyServer(function(input, output, session) {
     createSummary <- reactive({
         if(gene$symbol %in% c('NONE', '')) return(NULL)
 
-        geneAnnot <- try(.geneOfInt(reCenterSeg(), gene$symbol, geneTable),
+        geneAnnot <- try(.geneOfInt(gene$symbol, reCenterGenes()),
             silent = TRUE)
         if(class(geneAnnot)[1] != 'try-error' & !is.null(geneAnnot)){
             selected <- geneAnnot[,c("symbol", "entrezid", "fullName",

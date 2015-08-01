@@ -26,6 +26,7 @@ shinyUI(
                )
         ),
         
+        textInput("minSeg", "Merging segments shorter than (Kb)", 25),
         sliderInput("center", "Recenter profile", min=-1.5, max=1.5, value=0,
             step = .1),
         sliderInput("Ymax", "Rescale max(y)", min=.1, max=1, value=1, step=.1),

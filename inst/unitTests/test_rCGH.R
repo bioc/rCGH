@@ -3,6 +3,16 @@ test_validCytoScan <- function(){
     	package = "rCGH")
 	checkTrue(rCGH:::.validCytoScan(filePath))	
 }
+test_validSNP6 <- function(){
+    filePath <- system.file("extdata", "Affy_snp6_cnchp.txt.bz2",
+        package = "rCGH")
+    checkTrue(rCGH:::.validSNP6(filePath))  
+}
+test_validAgilent <- function(){
+    filePath <- system.file("extdata", "Agilent4x180K.txt.bz2",
+        package = "rCGH")
+    checkTrue(rCGH:::.validAgilent(filePath))  
+}
 test_Cores <- function(){
     rCGH:::.setCores(4, FALSE) == 4
 }
@@ -87,8 +97,8 @@ test_Pipeline <- function(){
         stop("Error when segmenting: empty segmentation table.")
 
     # Extracting genes
-    cgh <- byGeneTable(cgh)
-    bg <- getByGene(cgh)
+#    bg <- byGeneTable(cgh)
+    bg <- byGeneTable(st)
     if(nrow(bg)==0)
         stop("Error when extracting genes: empty gene table.")
 

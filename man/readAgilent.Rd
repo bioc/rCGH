@@ -8,7 +8,7 @@ Agilent Dual-Color Hybridization \code{"\linkS4class{rCGH-Agilent}"}
 
 \description{
 A constructor function taking as input an Agilent FE .txt file, exported from
-Feature Extraction, possibly in a compressed format (.bz2 or gz).\cr
+Feature Extraction, possibly in a compressed format (.bz2 or .gz).\cr
 Agilent from 44 to 400K are supported.
 }
 

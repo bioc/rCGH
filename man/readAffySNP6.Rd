@@ -5,7 +5,7 @@
 
 \description{
 A constructor function which takes an Affymetrix SNP6 cychp.txt (or cnchp.txt)
-file as input, possibly in a compressed format (.bz2 or gz).\cr
+file as input, possibly in a compressed format (.bz2 or .gz).\cr
 These files are exported from Chromosome Analysis Suite (ChAS) or Affymetrix
 Power Tools (APT) (see the \code{References} section).
 }

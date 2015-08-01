@@ -14,17 +14,17 @@ setMethod(f="getInfo",
         message(sprintf("'%s' not available.", item[idx]))
     }
 })
-setMethod(f="getByGene",
-    signature="rCGH",
-    definition=function(object, gene=NULL){
-        bygene <- object@byGene
-        if(is.null(gene)){
-            return(bygene)
-        } else{
-            gene <- toupper(gene)
-            return(bygene[which(bygene$symbol == gene),])
-            }
-        })
+# setMethod(f="getByGene",
+#     signature="rCGH",
+#     definition=function(object, gene=NULL){
+#         bygene <- object@byGene
+#         if(is.null(gene)){
+#             return(bygene)
+#         } else{
+#             gene <- toupper(gene)
+#             return(bygene[which(bygene$symbol == gene),])
+#             }
+#         })
 setMethod(f="getCNset",
     signature="rCGH",
     definition=function(object){ return(object@cnSet) })
@@ -33,7 +33,12 @@ setMethod(f="getParam",
     definition=function(object){ return(object@param) })
 setMethod(f="getSegTable",
     signature="rCGH",
-    definition=function(object){ return(object@segTable) })
+    definition=function(object, minLen = NULL){
+        segTable <- object@segTable
+        if(!is.null(minLen))
+            segTable <- .smoothSeg(segTable, minLen)
+        return(segTable)
+        })
 
 
 #####################
@@ -209,7 +214,7 @@ setMethod(f="EMnormalize",
 
 setMethod(f="segmentCGH",
     signature="rCGH",
-    definition=function(object, Smooth=TRUE, UndoSD=NULL, minMarks=8,
+    definition=function(object, Smooth=TRUE, UndoSD=NULL, minLen=10,
         nCores=NULL, verbose=TRUE){
 
         if(!.validrCGHObject(object))
@@ -218,6 +223,7 @@ setMethod(f="segmentCGH",
         cnSet <- getCNset(object)
         cnSet <- cnSet[order(cnSet$ChrNum, cnSet$ChrStart),]
         params <- getParam(object)
+        params$minSegLen <- minLen
 
         if(Smooth){
             mad <- .getMAD(object)
@@ -226,8 +232,8 @@ setMethod(f="segmentCGH",
 
         if(is.null(UndoSD)){
             mad <- .getMAD(object)
-            alpha <- 0.48
-            params$UndoSD <- alpha * mad^(1/2) - .02
+            alpha <- 0.5
+            params$UndoSD <- alpha * mad^(1/2) #- .02
         } else {
             params$UndoSD <- UndoSD
         }
@@ -251,8 +257,8 @@ setMethod(f="segmentCGH",
             params, nCores)
 
         if(verbose)
-            message("Removing segments shorter than ", minMarks, " markers.")
-        segTable <- .smoothSeg(segTable, minMarks)
+            message("Merging segments shorter than ", minLen, "Kb.")
+        segTable <- .smoothSeg(segTable, minLen)
 
         segTable <- .computeMedSegm(segTable, L2R)
         segTable <- .mergeLevels(segTable)
@@ -267,23 +273,24 @@ setMethod(f="segmentCGH",
     }
 )
 
-setMethod(f="byGeneTable",
-    signature="rCGH",
-    definition=function(object, verbose = TRUE){
+byGeneTable <- function(segTable, symbol = NULL, verbose = TRUE){
 
-        if(!.validrCGHObject(object))
-            return(NULL)
+    # if(grepl("rCGH", class(segTable)))
+    #     segTable <- getSegTable(segTable)
 
-        if(verbose) message("Creating byGene table...")
-        
-        segTable <- getSegTable(object)
-        object@byGene <- .ByGene(segTable)
-        
-        if(verbose){
-            message("Use getByGene(object) to extract the by-gene table.")
-        }
-
-        return(object)
+    .ByGene(segTable, symbol, verbose)
     }
-)
+
+# setMethod(f="byGeneTable",
+#     signature="rCGH",
+#     definition=function(object, symbol = NULL, verbose = TRUE){
+
+#         if(!.validrCGHObject(object))
+#             return(NULL)
+        
+#         segTable <- getSegTable(object)
+#         .ByGene(segTable, symbol, verbose)
+
+#     }
+# )
 

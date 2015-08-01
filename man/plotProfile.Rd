@@ -11,16 +11,16 @@ object of class \code{"\linkS4class{rCGH}"}.
 }
 
 \usage{
-\S4method{plotProfile}{rCGH}(object, gene=NULL, gain=.5, loss=(-.5),
-    Title=NULL, ylim=NULL)
+\S4method{plotProfile}{rCGH}(object, symbol=NULL, gain=.5, loss=(-.5),
+    minLen = 10, Title=NULL, ylim=NULL)
 }
 
 \arguments{
     \item{object}{
     : An object of class \code{"\linkS4class{rCGH}"}
     }
-    \item{gene}{
-    : character. A valid HUGO symbol (not case sensitive).
+    \item{symbol}{
+    : character. A valid HUGO symbol (case insensitive).
     }
     \item{gain}{
     : numeric. A gain threshold value (in \eqn{Log2(Ratio)}) from where
@@ -29,6 +29,12 @@ object of class \code{"\linkS4class{rCGH}"}.
     \item{loss}{
     : numeric.  A loss threshold value (in \eqn{Log2(Ratio)}) from where
     lossed segments will be shown, in red.
+    }
+    \item{minLen}{
+    : numeric. The mininal length for a segment, in Kb.
+    When \code{NULL} (default), segments are reported as they have been
+    computed with \code{\link{segmentCGH}}, segments shorter than the
+    specified value are re-merged otherwise.
     }
     \item{Title}{
     : character string. A title for the density plot. If \code{NULL} (default),
@@ -63,7 +69,7 @@ cgh <- EMnormalize(cgh)
 cgh <- segmentCGH(cgh, nCores=1)
 
 # Static visalizations
-plotProfile(cgh)
+plotProfile(cgh, "erbb2")
 
 }
 

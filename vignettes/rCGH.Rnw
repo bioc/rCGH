@@ -118,7 +118,6 @@ are structured as follow:
     \item{cnSet}: the full by-probe dataset.
     \item{param}: the workflow parameters, for traceability.
     \item{segTable}: the segmentation data.
-    \item{byGene}: the final by-gene dataset.
 \end{itemize}
 
 All these slots are accessible through specific functions, as described in the
@@ -243,16 +242,15 @@ centering the profile:
 cgh <- EMnormalize(cgh, G = 3)
 @
 
-\pagebreak
+\vspace{5mm}
 
 <<plotDensity, fig.width=7, fig.height=5, fig.show='hide'>>=
 plotDensity(cgh)
 @
 
 \incfig[h]{figure/plotDensity-1}{.75\textwidth}{plotDensity.}
-{\Rfunction{plotDensity()} shows how \emph{EM} has modeled the \emph{LRR}
-distribution, and what peak has been chosen for centralizing the profile
-(indicated in bold).}
+{\Rfunction{plotDensity()} shows how \emph{EM} models the \emph{LRR}
+distribution, and what peak is chosen for centralizing the profile (in bold).}
 
 
 \subsection{Segmenting}
@@ -314,8 +312,8 @@ The final genes' list combines position information from
 \vspace{5mm}
 
 <<byGeneTable>>=
-cgh <- byGeneTable(cgh)
-geneTable <- getByGene(cgh)
+#geneTable <- byGeneTable(cgh)
+geneTable <- byGeneTable(segTable)
 head(geneTable, n=3)
 @
 
@@ -351,13 +349,12 @@ Notice that \Rfunction{plotLOH()} and \Rfunction{multiplot()} are relevant only
 in case the allelic difference is available, namely when Affymetrix cnchp.txt
 files are used.
 
-\pagebreak
 
 \subsubsection{Static profile visualizations}
-\Rfunction{plotProfile()} allows the genomic profile visualization. When the
-genes table is built, any gene of interest can be added to the plot by passing
-a valid HUGO symbol. Other arguments can be used to color the segments
-according to specified gain/loss thresholds, or to change the plot title.
+\Rfunction{plotProfile()} allows the genomic profile visualization. Any gene(s)
+of interest can be added to the plot by passing a valid HUGO symbol.
+Other arguments can be used to color the segments according to specified
+gain/loss thresholds, or to change the plot title.
 \\
 Two other static functions can be useful for reporting alterations:
 \Rfunction{plotLOH()} to analyse the LOH, and \Rfunction{multiplot()} to build 
@@ -365,9 +362,11 @@ a full report, including both the genomic profile and the LOH.
 
 \vspace{5mm}
 
-<<getProfile, fig.width=7.5, fig.height=6.5, fig.show='hide'>>=
-multiplot(cgh, "erbb2")
+<<getProfile, fig.width=7.5, fig.height=7, fig.show='hide'>>=
+multiplot(cgh, c("egfr", "erbb2"))
 @
+
+\pagebreak
 
 \incfig[h]{figure/getProfile-1}{.95\textwidth}{Static views.}
 {
@@ -375,18 +374,20 @@ multiplot(cgh, "erbb2")
 profile and the LOH.
 }
 
+\pagebreak
+
 \subsubsection{Recentering}
-When the profile centering doesn't seem appropriate, the \Rfunction(recenter())
-function allows the user to choose another centralization value. The new choice
-has to be specified as the peak number to use: peaks are indexed, from 1 to k (
+When the profile centering doesn't seem appropriate, \Rfunction{recenter()}
+allows the user to choose another centralization value. The new choice
+has to be specified as the peak index to use: peaks are indexed, from 1 to k (
 from left to right) as they appear on the density plot.
 
 \vspace{5mm}
 
-<<recenter, fig.width=7.5, fig.height=3.5, fig.show='hide'>>=
+<<recenter, fig.width=7.5, fig.height=4, fig.show='hide'>>=
 # Recentering on peak #3
 recenter(cgh) <- 3
-plotProfile(cgh)
+plotProfile(cgh, "erbb2")
 @
 
 \incfig[h]{figure/recenter-1}{.95\textwidth}{Recentering.}
@@ -413,26 +414,31 @@ gene table to be exported, as they have been modified.
 
 The \Rfunction{view()} control panel:
 \begin{itemize}
-    \item{Gene Symbol} : displays any existing gene, providing its official 
+    \item{Gene Symbol} : display any existing gene, providing its official 
     HUGO symbol.
-    \item{Show chromosome} : displays the entire profile (default is 'All') 
+    \item{Show chromosome} : display the entire profile (default is 'All'),
     or one specific chromosome.
-    \item{Recenter profile} : recenter the profile on-the-fly. The gene 
-    values  will be also updated in the 'Genes table'.
-    \item{Rescale max(y)} : adjusts the top y-axis (0<y) using a proportion 
+    \item{Gain/Loss colors} : choose blue/red or red/blue.
+    \item{Recenter profile} : recenter the profile on-the-fly. Gene values
+    are updated in the 'Genes table'.
+    \item{Merge segments...} : merge segments shorter than the specified
+    value, in Kb. Gene values are updated in the 'Genes table'.
+    \item{Recenter profile} : recenter the profile on-the-fly. Gene values
+    are updated in the 'Genes table'.
+    \item{Rescale max(y)} : adjust the top y-axis (0<y) using a proportion 
     of the maximum value.
-    \item{Rescale min(y)} : adjusts the bottom y-axis (y<0) using a 
+    \item{Rescale min(y)} : adjust the bottom y-axis (y<0) using a 
     proportion of the minimum value.
-    \item{Gain threshold (Log2ratio)} : defines the gain threshold. 
-    Segments higher than this value are colored in blue, and the 
-    'Genes table' is filtered, consequently.
-    \item{Loss threshold (Log2ratio)} : same as 'Gain threshold' for 
-    losses. Segments lower than this value are colored in red.
-    \item{Download - Profile} : to download the profile as it is displayed 
-    on the screen, including modifications.
-    \item{Download - LOH} : to download the LOH plot as it is displayed 
-    on the screen, including modifications.
-    \item{Download - Table} : to download the 'Genes table', including 
+    \item{Gain threshold (Log2ratio)} : define the gain threshold. 
+    Segments higher than this value are colored according to the chosen color
+    code, and the 'Genes table' is filtered, consequently.
+    \item{Loss threshold (Log2ratio)} : same as 'Gain threshold' but for 
+    losses.
+    \item{Download - Profile} : download the profile as it is displayed on the
+    screen, including modifications.
+    \item{Download - LOH} : download the LOH plot as it is displayed on the
+    screen, including modifications.
+    \item{Download - Table} : download the 'Genes table', including
     modifications.
 \end{itemize}
 
@@ -447,7 +453,7 @@ view(cgh)
 The genomic profile is displayed in the first \emph{CGH profile} tab (left).
 Several changes can be applied using the control panel (in blue). The list of
 genes is accessible through the \emph{Genes table} tab (right). Both are updated
-simultaneously and can be exported, after modifications.
+simultaneously and can be exported, after modifications are applied.
 }
 
 \pagebreak
@@ -464,14 +470,26 @@ list.files(system.file("extdata", package = "rCGH"))
 
 \bioccomment{
 \\
+In order to speed up demos, the provided example files contain only a subset of
+the original probes.\\
 Affymetrix example files (cytoScan and SNP6) only contain SNP
 probes. Setting \Rcode{useProbes = "cn"} in \Rcode{readAffy} functions should
 return an error.
 }
 
+\section{Server version}
+A web browser version of the interactive visualization is available at\\
+\url{https://fredcommo.shinyapps.io/aCGH_viewer}\\
+As inputs, this application support the \Rpackage{rCGH} segmentation tables, or
+any segmentation table in the same format as the \Rpackage{CBS} outputs.
+\\
+For more details about this application, or to install it on your own server,
+please visit\\
+\url{https://github.com/fredcommo/aCGH_viewer}.
+
 \section{Session information}
 <<session>>=
-sessionInfo()
+toLatex(sessionInfo())
 @
 
 \pagebreak
