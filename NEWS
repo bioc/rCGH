@@ -5,7 +5,7 @@ rCGH package 0.99.8
 -----------------------
 
 BUG FIXES
-	# Error when merging probes with duplicated locations on
+	* Error when merging probes with duplicated locations on
     Agilent CytoGenomics 3.0: fixed.
 
 
