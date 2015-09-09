@@ -1,6 +1,15 @@
 R News
 
 
+rCGH package 0.99.10
+-----------------------
+
+BUG FIXES
+    * In byGeneTable(): errors may occured when genes were searched
+    on too short segments.
+
+
+
 rCGH package 0.99.9
 -----------------------
 

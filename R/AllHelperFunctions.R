@@ -932,12 +932,18 @@ geneDB <- geneDB[order(geneDB$gene_id)]
     if(length(idx) == 0)
         return(NULL)
 
-    bySymbol <- select(org.Hs.eg.db,
+    bySymbol <- try(select(org.Hs.eg.db,
                         keys=geneDB$gene_id[idx],
                         keytype='ENTREZID',
                         columns=c('SYMBOL', 'GENENAME', 'MAP')
-        )
-    byRange <- as.data.frame(geneDB[idx])
+                        ), silent = TRUE)
+    if(inherits(bySymbol, "try-error"))
+        return(NULL)
+
+    byRange <- try(as.data.frame(geneDB[idx]),
+        silent = TRUE)
+    if(inherits(byRange, "try-error"))
+        return(NULL)
         
     geneList <- merge(bySymbol, byRange,
                         by.x = "ENTREZID", by.y = "gene_id", all = TRUE)
