@@ -2,7 +2,7 @@ Package: rCGH
 Type: Package
 Title: Comprehensive Pipeline for Analyzing and Visualizing Agilent
     and Affymetrix Array-Based CGH Data
-Version: 1.0.0
+Version: 1.1.0
 Date: 2015-08-26
 Authors@R: c(person(given="Frederic", family="Commo", role=c("aut", "cre"), 
     email="frederic.commo@gustaveroussy.fr"))
