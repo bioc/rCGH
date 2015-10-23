@@ -4,7 +4,7 @@ require(ggplot2)
 require(grid)
 
 source('helpers.R')
-source('byGene.R')
+#source('byGene.R')
 cat("Loading files...")
 segTable <- readRDS(file.path(getwd(), "data/st.rds"))
 #geneTable <- readRDS(file.path(getwd(), "data/bg.rds"))

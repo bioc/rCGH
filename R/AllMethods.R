@@ -14,17 +14,6 @@ setMethod(f="getInfo",
         message(sprintf("'%s' not available.", item[idx]))
     }
 })
-# setMethod(f="getByGene",
-#     signature="rCGH",
-#     definition=function(object, gene=NULL){
-#         bygene <- object@byGene
-#         if(is.null(gene)){
-#             return(bygene)
-#         } else{
-#             gene <- toupper(gene)
-#             return(bygene[which(bygene$symbol == gene),])
-#             }
-#         })
 setMethod(f="getCNset",
     signature="rCGH",
     definition=function(object){ return(object@cnSet) })
@@ -275,22 +264,6 @@ setMethod(f="segmentCGH",
 
 byGeneTable <- function(segTable, symbol = NULL, verbose = TRUE){
 
-    # if(grepl("rCGH", class(segTable)))
-    #     segTable <- getSegTable(segTable)
-
     .ByGene(segTable, symbol, verbose)
+
     }
-
-# setMethod(f="byGeneTable",
-#     signature="rCGH",
-#     definition=function(object, symbol = NULL, verbose = TRUE){
-
-#         if(!.validrCGHObject(object))
-#             return(NULL)
-        
-#         segTable <- getSegTable(object)
-#         .ByGene(segTable, symbol, verbose)
-
-#     }
-# )
-

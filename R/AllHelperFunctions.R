@@ -894,11 +894,14 @@ geneDB <- geneDB[order(geneDB$gene_id)]
     geneDB <- geneDB
     symbol <- toupper(symbol)
     
-    bySymbol <- try(select(org.Hs.eg.db,
-                    keys = symbol,
-                    keytype = 'SYMBOL',
-                    columns = c('SYMBOL','ENTREZID', 'GENENAME', 'MAP')
-                    ), silent = TRUE)
+    suppressMessages(
+        bySymbol <- try(select(org.Hs.eg.db,
+                        keys = symbol,
+                        keytype = 'SYMBOL',
+                        columns = c('SYMBOL','ENTREZID', 'GENENAME', 'MAP')
+                        ), silent = TRUE)
+        )
+
     if(inherits(bySymbol, "try-error"))
         stop(sprintf("\n'%s' not found.", symbol))
     
@@ -932,11 +935,14 @@ geneDB <- geneDB[order(geneDB$gene_id)]
     if(length(idx) == 0)
         return(NULL)
 
-    bySymbol <- try(select(org.Hs.eg.db,
-                        keys=geneDB$gene_id[idx],
-                        keytype='ENTREZID',
-                        columns=c('SYMBOL', 'GENENAME', 'MAP')
-                        ), silent = TRUE)
+    suppressMessages(
+        bySymbol <- try(select(org.Hs.eg.db,
+                            keys=geneDB$gene_id[idx],
+                            keytype='ENTREZID',
+                            columns=c('SYMBOL', 'GENENAME', 'MAP')
+                            ), silent = TRUE)
+        )
+
     if(inherits(bySymbol, "try-error"))
         return(NULL)
 
@@ -949,14 +955,6 @@ geneDB <- geneDB[order(geneDB$gene_id)]
                         by.x = "ENTREZID", by.y = "gene_id", all = TRUE)
 
     .renameGeneList(geneList)
-    # colnames(geneList) <- tolower(colnames(geneList))
-    # oldNames <- c("genename", "map", "seqnames", "start", "end")
-    # newNames <- c("fullName", "cytoband", "chr", "chrStart", "chrEnd")
-    # colnames(geneList)[colnames(geneList) %in% oldNames] <- newNames
-        
-    # geneList <- geneList[order(geneList$symbol),]
-    # geneList$chr <- as.character(geneList$chr)
-    # .chrAsNum(geneList)
 }
 .renameGeneList <- function(geneList){
     colnames(geneList) <- tolower(colnames(geneList))
@@ -1064,7 +1062,7 @@ geneDB <- geneDB[order(geneDB$gene_id)]
         message("No gene information available.")
         return(gPlot)
     }
-#    print(bg)
+
     genomeStart <- Log2Ratio <- NULL
 
     ylim <- max(gPlot$coordinates$limits$y)

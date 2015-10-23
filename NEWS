@@ -1,6 +1,14 @@
 R News
 
 
+rCGH package 1.0.1
+-----------------------
+
+BUG FIXES
+    * Major bug fixed in the view() function: one function was not properly called.
+
+
+
 rCGH package 0.99.10
 -----------------------
 
