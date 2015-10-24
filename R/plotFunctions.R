@@ -299,14 +299,6 @@ setMethod(f="view",
             saveRDS(segTable, file=file.path(path, "data/st.rds"))
         }
 
-        # bg <- getByGene(object)
-        # if(nrow(bg)==0){
-        #     message("The byGene table is not available yet.")
-        #     message("Please run byGeneTable() first.")
-        # } else{
-        #     saveRDS(bg, file=file.path(path, "data/bg.rds"))
-        # }
-
         cnSet <- getCNset(object)
         if("modelAllDif" %in% colnames(cnSet)){
             loh <- plotLOH(object)
