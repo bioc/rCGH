@@ -326,11 +326,14 @@ require( org.Hs.eg.db)
     if(length(idx) == 0)
         return(NULL)
 
-    bySymbol <- try(select(org.Hs.eg.db,
-                        keys=geneDB$gene_id[idx],
-                        keytype='ENTREZID',
-                        columns=c('SYMBOL', 'GENENAME', 'MAP')
-        ), silent=TRUE)
+    suppressMessages(
+	    bySymbol <- try(select(org.Hs.eg.db,
+	                        keys=geneDB$gene_id[idx],
+	                        keytype='ENTREZID',
+	                        columns=c('SYMBOL', 'GENENAME', 'MAP')
+	        ), silent=TRUE)
+	    )
+
     if(inherits(bySymbol, "try-error"))
         return(NULL)
     
