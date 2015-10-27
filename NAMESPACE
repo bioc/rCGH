@@ -18,12 +18,14 @@ import(GenomicFeatures)
 import(AnnotationDbi)
 
 ## IMPORTS FROM
-importFrom(limma, loessFit)
-importFrom(affy, tukey.biweight)
-importFrom(mclust, Mclust)
-importFrom(mclust, mclustBIC)
-importFrom(parallel, mclapply)
-importFrom(parallel, detectCores)
+importFrom("limma", "loessFit")
+importFrom("affy", "tukey.biweight")
+importFrom("mclust", "Mclust")
+importFrom("mclust", "mclustBIC")
+importFrom("parallel", "mclapply")
+importFrom("parallel", "detectCores")
+importFrom("IRanges", "IRanges")
+importFrom("grDevices", "rgb")
 
 ## EXPORT METHODS
 exportPattern("^[[:alpha:]]+")
