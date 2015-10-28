@@ -12,7 +12,8 @@ Power Tools (APT) (see the \code{References} section).
 
 \usage{
 readAffySNP6(filePath, sampleName = NA, labName = NA,
-    useProbes=c("snp", "cn", "all"), verbose = TRUE)
+    useProbes=c("snp", "cn", "all"), genome = c("hg19", "hg18", "hg38"),
+    verbose = TRUE)
 }
 
 \arguments{
@@ -28,6 +29,10 @@ readAffySNP6(filePath, sampleName = NA, labName = NA,
     \item{useProbes}{
     : character. What probes to consider. Possible choices are SNP probes 
     only ("snp", default), CN probes only ("cn"), or all the probes ("all").
+    }
+    \item{genome}{
+    : string. The genome build to use. Supported genomes are \code{hg18},
+    \code{hg19} (default), and \code{hg38}.
     }
     \item{verbose}{
     : logical. When \code{TRUE} (default), progress is printed.
@@ -54,6 +59,7 @@ Frederic Commo
 
 \seealso{
 \code{\link{readAgilent}}, \code{\link{readAffyCytoScan}},
+\code{\link{readIllumina}}, \code{\link{readGeneric}},
 \code{\link{setInfo}}, \code{\link{getInfo}}
 }
 

@@ -46,9 +46,7 @@ setMethod(f="plotDensity",
 setMethod(f="plotProfile",
     signature="rCGH",
     definition=function(object, symbol=NULL, gain=.5, loss=(-.5), minLen = 10,
-        Title=NULL, ylim=NULL){
-
-        hg19 <- hg19
+        pCol = "grey50", GLcol = c("blue", "red3"), Title=NULL, ylim=NULL){
 
         if(!.validrCGHObject(object))
             return(NULL)
@@ -57,7 +55,27 @@ setMethod(f="plotProfile",
             stop("ylim must be numeric.\n")
 
         if(!is.null(ylim) && length(ylim)!=2)
-            stop("'ylim' must be NULL or a vector of 2 values.\n")
+            stop("'ylim' must be a vector of 2 values or let to NULL to use
+                the full range of values.\n")
+
+        if(is.null(GLcol)){
+            GLcol <- c("blue", "red3")
+            warning("'GLcol' cannot be NULL. 'blue/red' has been used.")
+        }
+
+        if(length(GLcol) < 2)
+            warning("You specified less than 2 colors for 'GLcol'.
+                Gains only have been colored.")
+
+        if(length(GLcol) > 2){
+            warning("You specified more than 2 colors for 'GLcol'.
+                Only the 2 first have been used.")
+        }
+
+        hg18 <- hg18; hg19 <- hg19; hg38 <- hg38
+
+        HG <- switch(getInfo(object, "genome"),
+            hg18 = hg18, hg19 = hg19, hg38 = hg38)
 
         segTable <- getSegTable(object, minLen)
         if(nrow(segTable)==0){
@@ -65,11 +83,12 @@ setMethod(f="plotProfile",
             return(NULL)
         }
         s = 4
-        myBlue <- rgb(0, 0.45, 1, 1)
+#        myBlue <- rgb(0, 0.45, 1, 1)
 
         segTable <- segTable[which(segTable$chrom != 24),]
-        segTable <- .convertLoc(segTable)
-        cumLen <- hg19$cumlen[1:23]
+        segTable <- .convertLoc(segTable, HG)
+
+        cumLen <- HG$cumlen[1:23]
 
         if(is.null(ylim)){
             miny <- max(-2.5, min(segTable$seg.med, na.rm=TRUE)) - .75
@@ -79,8 +98,8 @@ setMethod(f="plotProfile",
 
         idx <- which(segTable$seg.med<= loss | segTable$seg.med>= gain)
         subTable <- segTable[idx,]
-        GLcolors <- ifelse(subTable$seg.med<= loss, 'red3',
-                            ifelse(subTable$seg.med>= gain, myBlue, NA))
+        GLcolors <- ifelse(subTable$seg.med<= loss, GLcol[2],
+                            ifelse(subTable$seg.med>= gain, GLcol[1], NA))
 
         if(is.null(Title)){
             Title = paste(getInfo(object, 'sampleName'),
@@ -101,11 +120,11 @@ setMethod(f="plotProfile",
             })
         X <- as.data.frame(do.call(rbind, X))
 
-        cumCentr <- 1/2*hg19$length[1:23] + cumLen
+        cumCentr <- 1/2*HG$length[1:23] + cumLen
 
         # main plot
         gPlot <- ggplot(data = X, aes_string(x="loc", y="l2r")) +
-            geom_point(pch = 19, cex = 0.1, col = 'grey50') +
+            geom_point(pch = 19, cex = 0.1, col = pCol) +
             geom_hline(yintercept = 0) +
             geom_vline(xintercept = cumLen[1:23], color = 'grey30',
                 linetype = 2, size = 0.25) +
@@ -137,7 +156,8 @@ setMethod(f="plotProfile",
             gPlot <- .addSegments(gPlot, subTable, GLcolors)
 
         if(!is.null(symbol)){
-            bg <- byGeneTable(getSegTable(object, minLen), symbol, TRUE)
+            bg <- byGeneTable(getSegTable(object, minLen),
+                symbol, getInfo(object, "genome"), TRUE)
             return(.addTagToPlot(gPlot, bg))
             }
 
@@ -149,10 +169,14 @@ setMethod(f="plotLOH",
     signature="rCGH",
     definition=function(object, Title=NULL){
 
-        hg19 <- hg19
 
         if(!.validrCGHObject(object))
             return(NULL)
+
+        hg18 <- hg18; hg19 <- hg19; hg38 <- hg38
+        
+        HG <- switch(getInfo(object, "genome"),
+            hg18 = hg18, hg19 = hg19, hg38 = hg38)
 
         cnSet <- getCNset(object)
 
@@ -162,7 +186,7 @@ setMethod(f="plotLOH",
         }
 
         # Use snp probes only
-        snpSet <- cnSet[grep("^S", cnSet$ProbeName), ]
+        snpSet <- cnSet[grep("^S|^rs", cnSet$ProbeName), ]
 
         if(is.null(Title)){
             Title = paste(getInfo(object, 'sampleName'),
@@ -173,17 +197,23 @@ setMethod(f="plotLOH",
         gLocs <- lapply(ss, function(tmp){
             n <- nrow(tmp)
             chr <- unique(tmp$ChrNum)
-            return(tmp$ChrStart + hg19$cumlen[chr])
+            return(tmp$ChrStart + HG$cumlen[chr])
         })
         gLocs <- do.call(c, gLocs)
-        marks <- sapply(2:nrow(hg19), function(ii)
-            (hg19$cumlen[ii-1] + hg19$cumlen[ii])/2
+        marks <- sapply(2:nrow(HG), function(ii)
+            (HG$cumlen[ii-1] + HG$cumlen[ii])/2
         )
-        values <- snpSet$modelAllDif
+
+        if(inherits(object, "rCGH-Illumina")){
+            values <- snpSet$Allele.Difference
+        } else{
+            values <- snpSet$modelAllDif
+            }
+
         idx <- sample(1:length(values), min(length(values), 50e3))
         X <- data.frame(loc=gLocs[idx], AD=values[idx])
         
-        cumCentr <- 1/2*hg19$length + hg19$cumlen
+        cumCentr <- 1/2*HG$length + HG$cumlen
         gPlot <- ggplot(data = X, aes_string(x="loc", y="AD")) +
             geom_point(pch = 19, cex = 0.2, col = rgb(0,0,0,.75)) +
             geom_hline(yintercept = 0) +
@@ -191,7 +221,7 @@ setMethod(f="plotLOH",
                 color = "blue", linetype=2) +
             geom_hline(yintercept = seq(-1.5, 1.5, by = 1),
                 color = "lightblue", linetype=2) +
-            geom_vline(xintercept = hg19$cumlen[1:23], color = 'red',
+            geom_vline(xintercept = HG$cumlen[1:23], color = 'red',
                 linetype = 2, size = 0.25) +
             ggtitle(Title) +
             xlab('Genomic position (bp)') +
@@ -208,15 +238,25 @@ setMethod(f="plotLOH",
                 axis.title.y = element_text(size = rel(1.8), angle = 90),
                 axis.text.y = element_text(size = rel(1.5))
             )
-        gPlot <- gPlot +
-            coord_cartesian(ylim = range(-1.99, 1.99)) +
-            scale_y_continuous(breaks = seq(-1.5, 1.5, by = 0.5)) +
-            annotate(
-                'text',
-                x = c(-1e8, cumCentr[1:23]), y = rep(1.75, 24),
-                label = c("Chr", seq(1, 23)), size = 4, colour = "grey30"
-            )
-
+        if(inherits(object, "rCGH-Illumina")){
+                gPlot <- gPlot +
+                        coord_cartesian(ylim = range(0, 1.25)) +
+                        scale_y_continuous(breaks = seq(0, 1, by = 0.25)) +
+                        annotate(
+                            'text',
+                            x = c(-1e8, cumCentr[1:23]), y = rep(1.20, 24),
+                            label = c("Chr", seq(1, 23)),
+                            size = 4, colour = "grey30")
+            }else{
+                gPlot <- gPlot +
+                        coord_cartesian(ylim = range(-1.99, 1.99)) +
+                        scale_y_continuous(breaks = seq(-1.5, 1.5, by = 0.5)) +
+                        annotate(
+                            'text',
+                            x = c(-1e8, cumCentr[1:23]), y = rep(1.75, 24),
+                            label = c("Chr", seq(1, 23)),
+                            size = 4, colour = "grey30")
+            }
         return(gPlot)
     }
 )
@@ -224,6 +264,7 @@ setMethod(f="plotLOH",
 setMethod(f="multiplot",
     signature="rCGH",
     definition=function(object, symbol=NULL, gain=.5, loss=(-.5), minLen = 10,
+        pCol = "grey50", GLcol = c("blue", "red3"),
         L=matrix(seq(1, 12)), p=c(2/3, 1/3), Title=NULL, ylim=NULL){
 
     if(sum(p)!=1)
@@ -235,7 +276,8 @@ setMethod(f="multiplot",
 
     n <- nrow(L)
 
-    plot1 <- plotProfile(object, symbol, gain, loss, minLen, Title, ylim)
+    plot1 <- plotProfile(object, symbol, gain, loss, minLen, pCol, GLcol,
+        Title, ylim)
     if(is.null(plot1))
         stop("Nothing to plot.\n")
 
@@ -270,6 +312,12 @@ setMethod(f="view",
             stop("You may install shiny (>= 0.11.1) first")
         }
 
+        hg18 <- hg18; hg19 <- hg19; hg38 <- hg38
+        
+        genome <- getInfo(object, "genome")
+        HG <- switch(genome,
+            hg18 = hg18, hg19 = hg19, hg38 = hg38)
+
         path <- system.file("shinyProfile", package="rCGH")
 
         lf <- list.files(file.path(path, "data"),
@@ -288,15 +336,17 @@ setMethod(f="view",
             browser <- getOption("shiny.launch.browser", interactive())
         }
 
-        segTable <- .convertLoc(getSegTable(object))
+        segTable <- .convertLoc(getSegTable(object), HG)
         if(nrow(segTable)==0){
             stop(
                 "No segmentation table available to generate a genomic profile. 
                     Please run segmentCGH() first.\n"
             )
         } else{
+            segTable <- segTable[which(segTable$chrom %in% 1:23),]
             segTable$num.mark <- round(segTable$num.mark/w)
             saveRDS(segTable, file=file.path(path, "data/st.rds"))
+            cat(genome, file = file.path(path, "data/hg.txt"), sep = "\n")
         }
 
         cnSet <- getCNset(object)

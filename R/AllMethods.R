@@ -140,6 +140,11 @@ setMethod(f="EMnormalize",
             if(length(s)==1)
                 s <- rep(s, length(m))
 
+            ord <- order(m)
+            m <- m[ord]
+            p <- p[ord]
+            s <- s[ord]
+
             if(mergeVal>0){
                 if(verbose)
                     message("Merging peaks closer than ", mergeVal, " ...")
@@ -222,6 +227,8 @@ setMethod(f="segmentCGH",
         if(is.null(UndoSD)){
             mad <- .getMAD(object)
             alpha <- 0.5
+            if(inherits(object, "rCGH-Illumina"))
+                alpha <- .95
             params$UndoSD <- alpha * mad^(1/2) #- .02
         } else {
             params$UndoSD <- UndoSD
@@ -262,8 +269,10 @@ setMethod(f="segmentCGH",
     }
 )
 
-byGeneTable <- function(segTable, symbol = NULL, verbose = TRUE){
+byGeneTable <- function(segTable, symbol = NULL,
+    genome = c("hg19", "hg18", "hg38"), verbose = TRUE){
 
-    .ByGene(segTable, symbol, verbose)
+    genome <- match.arg(genome)
+    .ByGene(segTable, symbol, genome, verbose)
 
     }

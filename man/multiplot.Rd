@@ -13,7 +13,8 @@ If no allelic difference is available, the genomic profile only is displayed.
 
 \usage{
 \S4method{multiplot}{rCGH}(object, symbol=NULL, gain=.5, loss=(-.5), minLen=10,
-L=matrix(seq(1, 12)), p=c(2/3, 1/3), Title=NULL, ylim=NULL)
+    pCol = "grey50", GLcol = c("blue", "red3"),
+    L=matrix(seq(1, 12)), p=c(2/3, 1/3), Title=NULL, ylim=NULL)
 }
 
 \arguments{
@@ -36,6 +37,14 @@ L=matrix(seq(1, 12)), p=c(2/3, 1/3), Title=NULL, ylim=NULL)
     When \code{NULL} (default), segments are reported as they have been
     computed with \code{\link{segmentCGH}}, segments shorter than the
     specified value are re-merged otherwise.
+    }
+    \item{pCol}{
+    : string. The probe points color. DEfault is \code{"grey50"}.
+    }
+    \item{GLcol}{
+    : vector. A vector of 2 colors: the gained and lost segments colors,
+    respectively. Default is \code{"blue"} for gains and \code{"red3"} for
+    losses.
     }
     \item{L}{
     : matrix. A matrix defining how the layout is built. Default is 12 lines.

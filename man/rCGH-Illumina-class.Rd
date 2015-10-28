@@ -1,12 +1,12 @@
-\name{rCGH-cytoScan-class}
+\name{rCGH-Illumina-class}
 \Rdversion{1.1}
 \docType{class}
-\alias{rCGH-cytoScan-class}
+\alias{rCGH-Illumina-class}
 
-\title{Class \code{"rCGH-cytoScan"}}
+\title{Class \code{"rCGH-Illumina"}}
 
 \description{
-An instance of class \code{"rCGH-cytoScan"}, which inherits from
+An instance of class \code{"rCGH-Illumina"}, which inherits from
 the superclass \code{"\linkS4class{rCGH}"}.\cr
 Slots described below are used to store sample information, analysis
 parameters, and segmentation results. All are accessible through specific
@@ -14,7 +14,7 @@ parameters, and segmentation results. All are accessible through specific
 }
 
 \section{Objects from the Class}{
-Objects can be created by calls of the form \code{new("rCGH-cytoScan", ...)}.
+Objects can be created by calls of the form \code{new("rCGH-Illumina", ...)}.
 }
 
 \section{Slots}{
@@ -43,7 +43,7 @@ Class \code{"\linkS4class{rCGH}"}, directly.
 }
 
 \section{Methods}{
-No methods defined with class "rCGH-cytoScan" in the signature.
+No methods defined with class "rCGH-Illumina" in the signature.
 }
 
 \author{
@@ -52,11 +52,11 @@ Frederic Commo
 
 \seealso{
 \code{"\linkS4class{rCGH}"}, \code{"\linkS4class{rCGH-Agilent}"},
-\code{"\linkS4class{rCGH-SNP6}"}, \code{"\linkS4class{rCGH-Illumina}"}
+\code{"\linkS4class{rCGH-SNP6}"}, \code{"\linkS4class{rCGH-cytoScan}"}
 }
 
 \examples{
-showClass("rCGH-cytoScan")
+showClass("rCGH-Illumina")
 }
 
 \keyword{classes}

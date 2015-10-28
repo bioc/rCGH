@@ -9,7 +9,7 @@ shinyUI(
         tags$head( tags$link(rel="stylesheet", type="text/css", href="style.css") ),
 
         h4('Gene symbol'),
-        div(id="geneSymbol", style="margin-top: -20px;", textInput("geneSymb",
+        div(id="geneSymbol", style="margin-top: -20px;", textInput("geneSymbol",
             '', 'NONE')),
         tags$hr(),
                       

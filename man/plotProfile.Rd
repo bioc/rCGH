@@ -12,7 +12,8 @@ object of class \code{"\linkS4class{rCGH}"}.
 
 \usage{
 \S4method{plotProfile}{rCGH}(object, symbol=NULL, gain=.5, loss=(-.5),
-    minLen = 10, Title=NULL, ylim=NULL)
+    minLen = 10, pCol = "grey50", GLcol = c("blue", "red3"),
+    Title=NULL, ylim=NULL)
 }
 
 \arguments{
@@ -36,13 +37,21 @@ object of class \code{"\linkS4class{rCGH}"}.
     computed with \code{\link{segmentCGH}}, segments shorter than the
     specified value are re-merged otherwise.
     }
+    \item{pCol}{
+    : string. The probe points color. DEfault is \code{"grey50"}.
+    }
+    \item{GLcol}{
+    : vector. A vector of 2 colors: the gained and lost segments colors,
+    respectively. Default is \code{"blue"} for gains and \code{"red3"} for
+    losses.
+    }
     \item{Title}{
     : character string. A title for the density plot. If \code{NULL} (default),
     the sample name (when exists) is used.
     }
     \item{ylim}{
-    : numeric. A vector of two values specifying \code{ylim}.
-    If \code{NULL} (default), y-range is defined from Log2Ratio values.
+    : numeric. A vector of two values specifying a range for the y-axis.
+    If \code{NULL} (default), the range of Log2Ratio is used.
     }
 }
 

@@ -14,7 +14,8 @@ Agilent from 44 to 400K are supported.
 
 \usage{
 readAgilent(filePath, sampleName = NA,
-    labName = NA, supFlags = TRUE, verbose = TRUE)
+    labName = NA, supFlags = TRUE, genome = c("hg19", "hg18", "hg38"),
+    verbose = TRUE)
 }
 
 \arguments{
@@ -29,6 +30,10 @@ readAgilent(filePath, sampleName = NA,
     }
     \item{supFlags}{
     : should the flagged probes be suppressed. Default is \code{TRUE}.
+    }
+    \item{genome}{
+    : string. The genome build to use. Supported genomes are \code{hg18},
+    \code{hg19} (default), and \code{hg38}.
     }
     \item{verbose}{
     : logical. if \code{TRUE} (default), progress is printed.
@@ -51,6 +56,7 @@ Frederic Commo
 
 \seealso{
 \code{\link{readAffyCytoScan}}, \code{\link{readAffySNP6}},
+\code{\link{readIllumina}}, \code{\link{readGeneric}},
 \code{\link{setInfo}}, \code{\link{getInfo}}
 }
 

@@ -1,6 +1,9 @@
 ###########################
 # PLOT HELPER FUNCTIONS
 ###########################
+
+# Segmentation table
+
 .getName <- function(segTable){
     return( unique(as.character(segTable$ID)) )
 }
@@ -86,7 +89,6 @@
         gainCol <- "red3"
         lossCol <- rgb(0, 0.45, 1, 1)
     }
-#    myBlue <- rgb(0, 0.45, 1, 1)
 
     segTable <- segTable[which(segTable$chrom %in% chr),]
     L <- abs(segTable$loc.end - segTable$loc.start)/1e6
@@ -108,7 +110,7 @@
 
     return(gPlot)   
 }
-.addChr <- function(gPlot, chr, hg19){
+.addChr <- function(gPlot, chr, hg){
     if(chr=="All") chr <- as.numeric(1:23)
     else chr <- as.numeric(chr)
 
@@ -116,9 +118,9 @@
     if(is.null(ylim)){
         ylim <- range(gPlot$data$l2r)
     }
-    cumCentr <- 1/2*hg19$length+hg19$cumlen
+    cumCentr <- 1/2*hg$length+hg$cumlen
     gPlot <- gPlot+
-        geom_vline(xintercept = hg19$cumlen[chr], color = 'grey30',
+        geom_vline(xintercept = hg$cumlen[chr], color = 'grey30',
             linetype = 2, size = 0.25) +
         annotate('text', x=cumCentr[chr], y=rep(max(ylim, na.rm=TRUE)*.95,
             length(chr)), label=chr, size = 4, colour = 'grey40')
@@ -130,7 +132,7 @@
     gPlot <- gPlot + ggtitle(Title)
     return(gPlot)  
 }
-.addTag <- function(gPlot, geneAnnot, Yexpand, gain, loss, GLcols){
+.addTag <- function(gPlot, geneAnnot, Yexpand, gain, loss){
 
     ylim <- gPlot$coordinates$limits$y
     ymin <- min(ylim)
@@ -142,22 +144,16 @@
 
     if(is.na(lr)) return(gPlot)
 
-    gainCol <- rgb(0, 0.45, 1, 1)
-    lossCol <- "red3"
-    if(grepl("red/blue", GLcols)){
-        gainCol <- "red3"
-        lossCol <- rgb(0, 0.45, 1, 1)
-    }
-    Col <- ifelse(lr<= loss, lossCol, ifelse(lr>=gain, gainCol, 'black'))
+    Col <- "grey25"
     gPlot <- gPlot +
         annotate("text",
             x=max(x, 2e8), y=yLabel,
-            label=paste0(symbol, '\n(Log2R = ', round(lr, 2), ')'),
-            cex=5, colour="grey25", fontface = "bold") +
-        geom_point(x=x, y=lr, cex=5, pch=19, colour="darkorchid4") +
-        geom_point(x=x, y=lr, cex=4, pch=19, colour="antiquewhite") +
-        geom_point(x=x, y=lr, cex=1, pch=19, colour=Col) #"darkorchid4"
-#        geom_point(x=x, y=lr, cex=.25, pch=19, colour="cyan")
+            label=paste0(symbol, '\n(Log2R = ', round(lr, 3), ')'),
+            fontface="bold", colour=Col) +
+        geom_point(x=x, y=lr, size=6, pch=19, colour="black") +
+        geom_point(x=x, y=lr, size=5, pch=19, colour="antiquewhite") +
+        geom_point(x=x, y=lr, size=4, pch=19, colour="darkorchid4") +
+        geom_point(x=x, y=lr, size=1, pch=19, colour="cyan")
 
     return(gPlot)
 }
@@ -216,6 +212,10 @@
 }
 .smoothSeg <- function(segTable, minSeg){
     minSeg <- as.numeric(minSeg)
+
+    if(is.na(minSeg) || minSeg <= 10)
+    	return(segTable)
+
     splitSegTables <- split(segTable, segTable$chrom)
     adjustedLocs <- lapply(splitSegTables, function(sst){
         if(nrow(sst)<2)
@@ -242,7 +242,7 @@
     } else if (idx==nrow(segTable)){
         return(idx-1)
     } else {
-        delta <- abs(segTable$seg.mean[c(idx-1,idx+1)] - segTable$seg.mean[idx])
+        delta <- abs(segTable$seg.med[c(idx-1,idx+1)] - segTable$seg.med[idx])
         i <- ifelse(which.min(delta)==1, idx-1, idx+1)
         return(i)
     }
@@ -254,90 +254,99 @@
         segTable$loc.start[j] <- segTable$loc.start[i]
     }
     segTable$num.mark[j] <- segTable$num.mark[j] + segTable$num.mark[i]
+    segTable$seg.mean[j] <- ifelse(
+        abs(segTable$seg.mean[i]) <= abs(segTable$seg.mean[j]),
+        segTable$seg.mean[i], segTable$seg.mean[j]
+        )
+    segTable$seg.med[j] <- ifelse(
+        abs(segTable$seg.med[i]) <= abs(segTable$seg.med[j]),
+        segTable$seg.med[i], segTable$seg.med[j]
+        )
+
     return(segTable)
 }
 
+# End helper functions
 ###########################
-# GENE ANNOTATIONS HELPERS
+# GENES ANNOTATIONS HELPER FUNCTIONS
 ###########################
 
+require(TxDb.Hsapiens.UCSC.hg18.knownGene)
 require(TxDb.Hsapiens.UCSC.hg19.knownGene)
+require(TxDb.Hsapiens.UCSC.hg38.knownGene)
 require( org.Hs.eg.db)
 
-.cmValues <- function(segTable, hg){
-    cmLocs <- .locateCM(segTable, hg)
-    out <- lapply(cmLocs, function(locs){
-        c(segTable$seg.mean[locs[1]], segTable$seg.mean[locs[2]])
-        })
-    return(out)
-}
-.locateCM <- function(segTable, hg){
+.createGeneDB <- function(genome){
 
-    chrs <- unique(segTable$chrom)
-    cmLocs <- lapply(chrs, function(chr){
+    if(genome == "hg18")
+        DB <- TxDb.Hsapiens.UCSC.hg18.knownGene
+    else if(genome == "hg38")
+        DB <- TxDb.Hsapiens.UCSC.hg38.knownGene
+    else if(genome == "hg19")
+        DB <- TxDb.Hsapiens.UCSC.hg19.knownGene
+    else
+        stop(sprintf("'%s' is not a supported genome", genome))
 
-        cStart <- hg$centromerStart[hg$chrom==chr]
-        cEnd <- hg$centromerEnd[hg$chrom==chr]
-        tmp <- segTable[segTable$chrom==chr,]
+    geneDB  <- genes(DB, columns=c("gene_id"))
 
-        locStart <- which(tmp$loc.start<=cStart & cStart<=tmp$loc.end)
-        if(length(locStart)==0){
-            locStart <- which.min(abs(tmp$loc.end - cStart))
+    if(genome == "hg19"){
+        geneDB <- append(geneDB,
+            GRanges(
+                c("chr19", "chr6"),
+                IRanges(c(15270444, 32162620), c(15311792, 32191844)),
+                strand = c("-", "-"),
+                gene_id = c(4854, 4855)
+                )
+            )
         }
 
-        locEnd <- which(tmp$loc.start<=cEnd & cEnd<=tmp$loc.end)
-        if(length(locEnd)==0){
-            locEnd <- which.min(abs(tmp$loc.start - cEnd))
+    if(genome == "hg38"){
+        geneDB <- append(geneDB,
+            GRanges(
+                c("chr19", "chr6"),
+                IRanges(c(15159633, 32194843), c(15200981, 32224067)),
+                strand = c("-", "-"),
+                gene_id = c(4854, 4855)
+                )
+            )
         }
 
-        as.numeric(rownames(tmp)[c(locStart, locEnd)])
-        })
+    geneDB[order(as.vector(seqnames(geneDB)), start(geneDB))]
 
-    return(cmLocs)
+#    assign("geneDB", geneDB, envir = .GlobalEnv)
 }
-.relativeLog <- function(bygene, cmValues, hg){
-    relativeLog <- lapply(1:length(cmValues), function(chr){
-        tmp <- bygene[bygene$chr==chr, ]
-        ii <- which(tmp$chrStart < hg$centromerStart[hg$chrom==chr])
-        jj <- which(tmp$chrStart > hg$centromerEnd[hg$chrom==chr])
-        rl <- rep(NA, nrow(tmp))
-        rl[ii] <- tmp$Log2Ratio[ii] - cmValues[[chr]][1]
-        rl[jj] <- tmp$Log2Ratio[jj] - cmValues[[chr]][2]
-        return(rl)
-        })
-    return(do.call(c, relativeLog))
-}
-.getGenesFromSeg <- function(chr, Start, End){
+
+.getGenesFromSeg <- function(chr, Start, End, DB){
     # chr: a integer, from 1 to 24
     # Start, End: numeric. Start/End segment position (from segmentation table)
 
-    geneDB <- geneDB
+#    geneDB <- geneDB
 
     if(chr==23) chr <- "X"
     if(chr==24) chr <- "Y"
     
     chr <- sprintf("chr%s", chr)
 
-    ii <- which(as.vector(seqnames(geneDB)) == chr)
-    jj <- intersect(ii, which(Start <= start(geneDB) & start(geneDB) <= End))
-    kk <- intersect(ii, which(Start <= end(geneDB) & end(geneDB) <= End))
+    ii <- which(as.vector(seqnames(DB)) == chr)
+    jj <- intersect(ii, which(Start <= start(DB) & start(DB) <= End))
+    kk <- intersect(ii, which(Start <= end(DB) & end(DB) <= End))
     idx <- unique(union(jj, kk))
 
     if(length(idx) == 0)
         return(NULL)
 
     suppressMessages(
-	    bySymbol <- try(select(org.Hs.eg.db,
-	                        keys=geneDB$gene_id[idx],
-	                        keytype='ENTREZID',
-	                        columns=c('SYMBOL', 'GENENAME', 'MAP')
-	        ), silent=TRUE)
-	    )
-
+        bySymbol <- try(select(org.Hs.eg.db,
+                        keys=DB$gene_id[idx],
+                        keytype='ENTREZID',
+                        columns=c('SYMBOL', 'GENENAME', 'MAP')
+                        ), silent=TRUE)
+        )
+    
     if(inherits(bySymbol, "try-error"))
         return(NULL)
     
-    byRange <- as.data.frame(geneDB[idx])
+    byRange <- as.data.frame(DB[idx])
         
     geneList <- merge(bySymbol, byRange,
                         by.x = "ENTREZID", by.y = "gene_id", all = TRUE)
@@ -357,12 +366,12 @@ require( org.Hs.eg.db)
     geneList$chr <- as.numeric(geneList$chr)
     geneList
 }
-.addGenomeLoc <- function(bygene){
-    hg19 <- hg19
+.addGenomeLoc <- function(bygene, hg){
+#    hg <- hg19
     ss <- split(bygene, bygene$chr)
     bygene <- lapply(ss, function(tmp){
         chr <- unique(tmp$chr)
-        tmp$genomeStart <- tmp$chrStart + hg19$cumlen[chr]
+        tmp$genomeStart <- tmp$chrStart + hg$cumlen[chr]
         return(tmp)
     })
     bygene <- as.data.frame(do.call(rbind, bygene))
@@ -370,35 +379,46 @@ require( org.Hs.eg.db)
     rownames(bygene) <- seq_len(nrow(bygene))
     bygene
 }
-.genometoChrLoc <- function(segTable){
+.genometoChrLoc <- function(segTable, hg){
+
+#    hg <- hg19
+
     splitTable <- split(segTable, segTable$chrom)
     newTable <- lapply(splitTable, function(tmp){
         chr <- unique(tmp$chrom)
-        tmp$loc.start <- tmp$loc.start - hg19$cumlen[chr]
-        tmp$loc.end <- tmp$loc.end - hg19$cumlen[chr]
+        tmp$loc.start <- tmp$loc.start - hg$cumlen[chr]
+        tmp$loc.end <- tmp$loc.end - hg$cumlen[chr]
         tmp
     })
     do.call(rbind.data.frame, newTable)
 }
-ByGene <- function(st){
+.filterBygene <- function(bg, chr, greater, lower, segLen){
+
+    ii <- which(bg$chr %in% chr)
+    jj <- which(bg$Log2Ratio>=greater | bg$Log2Ratio<=lower)
+    kk <- which(bg$"segLength(kb)"/1e3 <= segLen)
+    idx <- Reduce(intersect, list(ii, jj, kk))
+    bg[idx,]
+
+}
+ByGene <- function(st, hg, geneDB){
     if(is.null(st) || st == 1)
         return(NULL)
 
-    st <- .genometoChrLoc(st)
-    hg19 <- hg19
+#    hg <- hg19
+
+    st <- .genometoChrLoc(st, hg)
     bygene <- lapply(seq_len(nrow(st)), function(ii){
-        g <- .getGenesFromSeg(chr=st$chrom[ii], Start=st$loc.start[ii], End=st$loc.end[ii])
+        g <- .getGenesFromSeg(chr=st$chrom[ii], Start=st$loc.start[ii], End=st$loc.end[ii], geneDB)
         if(is.null(g))
             return(NULL)
 
         cbind.data.frame(g,
-                        Log2Ratio=st$seg.mean[ii],
+                        Log2Ratio=st$seg.med[ii],
                         num.mark=st$num.mark[ii], segNum=ii,
                         "segLength(kb)"=round(abs(st$loc.start[ii] - st$loc.end[ii])/1e3, 2)
                         )
     })
     bygene <- do.call(rbind, bygene)
-    cmValues <- .cmValues(st, hg19)
-    bygene$relativeLog <- .relativeLog(bygene, cmValues, hg19)
-    .addGenomeLoc(bygene)
+    .addGenomeLoc(bygene, hg)
 }

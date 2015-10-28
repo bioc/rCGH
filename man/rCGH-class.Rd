@@ -12,9 +12,11 @@ Class \code{"\linkS4class{rCGH}"} is a superclass living on top of
 properties of the superclass, but specific parametrizations used during the
 analysis process.\cr
 Objects are created by platform-specific \code{read} functions:
-\code{"\link{readAgilent}"}, \code{"\link{readAffySNP6}"}, and
-\code{"\link{readAffyCytoScan}"}, each corresponding to their matched file
-format.\cr
+\code{"\link{readAgilent}"}, \code{"\link{readAffySNP6}"},
+\code{"\link{readAffyCytoScan}"}, and \code{"\link{readIllumina}"},
+each corresponding to their matched file format.\cr
+A supplementary \code{"\link{readGeneric}"} allows the user to create a 
+\code{"\linkS4class{rCGH}"} object from custom arrays.
 Slots described below are used to store sample information and analysis
 parameters, as well as segmentation results. All are accessible through specific
 \code{"\link{Accessors}"} functions.
@@ -59,7 +61,8 @@ Frederic Commo
 
 \seealso{
 \code{"\linkS4class{rCGH-Agilent}"}, \code{"\linkS4class{rCGH-SNP6}"},
-\code{"\linkS4class{rCGH-cytoScan}"}
+\code{"\linkS4class{rCGH-cytoScan}"},\code{"\linkS4class{rCGH-Illumina}"}
+\code{"\linkS4class{rCGH-generic}"}
 }
 
 \examples{

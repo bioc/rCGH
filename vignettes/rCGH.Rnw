@@ -75,8 +75,7 @@ BiocStyle::latex()
 
 % Title
 \bioctitle[rCGH package]{
-Comprehensive Pipeline for Analyzing and Visualizing 
-Agilent and Affymetrix Array-Based CGH Data
+Comprehensive Pipeline for Analyzing and Visualizing Array-Based CGH Data
 }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -102,11 +101,26 @@ integrating functionalities specifically designed for precision medicine.
 \Rpackage{rCGH} ensures a full traceability by saving all the process parameters
 , and facilitates genomic profiles interpretation and decision-making through 
 interactive visualizations.\\
-\Rpackage{rCGH} supports Agilent (from 44K to 400K arrays), as well as
-Affymetrix, SNP6 and cytoScanHD arrays.
+\Rpackage{rCGH} supports commercial arrays : Agilent (from 44K to 400K arrays),
+Affymetrix SNP6.0 and cytoScanHD, and Illumina HumanOmniExpress. Custom arrays
+can also be supported, provided a suitable data format is passed. See
+\autoref{sec:readfile} for details.
 
-\incfig[h]{workflowOverview.pdf}{.5\textwidth}{\Rpackage{rCGH workflow.}}
-{The global rCGH analysis workflow}
+
+\section{Quick start}
+A typical workflow is of the form:
+
+\begin{itemize}[label={},leftmargin=*,parsep=0cm,itemsep=0cm]
+\item{\Rcode{> cgh <- readAffyCytoScan("path/to/cytoScan.CNCHP.txt")}}
+\item{\Rcode{> cgh <- adjustSignal(cgh)}}
+\item{\Rcode{> cgh <- EMnormalize(cgh)}}
+\item{\Rcode{> cgh <- segmentCGH(cgh)}}
+\end{itemize}
+
+Then, the genomic profile can be visualized or stored as any R object.
+The segmentation table can be extracted, then transformed into a by-gene table,
+or used for any further analysis. All these functions and features are detailed
+in the next sections.
 
 \section{\Rpackage{rCGH} object structure}
 In order to store (or update) data, sample information, and the workflow
@@ -126,8 +140,13 @@ next sections.
 Notice that \Rclass{rCGH} is a superclass designed for calling common methods.
 Depending on the type of array and the \emph{read} functions used, the 
 resulting objects will be assigned to classes \Rclass{rCGH-Agilent}, 
-\Rclass{rCGH-SNP6}, or \Rclass{rCGH-cytoScan}. These classes inherit from the 
-superclass, and allow array-specific pre-parametrizations.
+\Rclass{rCGH-SNP6}, \Rclass{rCGH-cytoScan}, \Rclass{rCGH-Illumina},
+or \Rclass{rCGH-generic}. These classes inherit from the superclass, and allow
+array-specific pre-parametrizations.\\
+\Rclass{rCGH-generic} is a particular class, not dedicated to a specific
+platform. The associated \Rfunction{readGeneric} read function allows the
+creation of a \Rclass{rCGH} object from custom arrays, provided the data
+contains mandatory columns, as described in the next section.
 
 
 \section{\Rpackage{rCGH} functions}
@@ -137,29 +156,63 @@ user to get access to specific results and workflow parameters, saved and stored
 at each step.
 
 \subsection{Reading files}
-Both Agilent Feature Exraction files (from 44K to 400K arrays), and Affymetrix 
-SNP6 and cytoScanHD, data are supported.\\
-However, and to keep more flexibility, Affymetrix CEL files have to be first
-read using ChAS or Affymetrix Power Tools (APT) \cite{Affy}, and then exported
-as cychp.txt or cnchp.txt files.\\
-Notice that cnchp.txt files contain Allelic differences, that allow the loss of
-heterozygosity (LOH) to be estimated, while cychp.txt files do not.
+\label{sec:readfile}
+
+\subsubsection{Commercial arrays}
+Agilent Feature Exraction files (from 44K to 400K arrays), Affymetrix 
+SNP6 and cytoScanHD, and Illumina HumanOmniExpress data are supported.\\
+To keep more flexibility, Affymetrix and Illumina raw data have to be processed
+first with the corresponding platform-specific tools:
+
+\begin{itemize}
+    \item{Affymetrix}: CEL files have to be first read using ChAS or Affymetrix
+    Power Tools (APT) \cite{Affy}, and then exported as cychp.txt or cnchp.txt
+    files.\\
+    Notice that cnchp.txt files contain Allelic differences, that allow the loss
+    of heterozygosity (LOH) to be estimated, while cychp.txt files do not.
+    \item{Illumina HumanOmniExpress} .txt files can be exported from
+    GenomeStudio.
+\end{itemize}
 
 Due to specific files structures, and since preambles may be missing (depending
-on ChAS and APT versions), \Rpackage{rCGH} as 3 specific read/build-object
+on ChAS and APT versions), \Rpackage{rCGH} provides specific read/build-object
 functions:
 
 \begin{itemize}
     \item{\Rfunction{readAgilent()}}: 44K to 400K FE (.txt) files.
     \item{\Rfunction{readAffySNP6()}}: cychp, cnchp and probeset (.txt) files,
-    exported from SNP6.0 CEL.
+    exported from SNP6.0 CEL, through ChAS or APT.
     \item{\Rfunction{readAffyCytoScan()}}: cychp, cnchp and probeset (.txt)
-    files, exported from CytoScanHD CEL.
+    files, exported from CytoScanHD CEL, through ChAS or APT.
+    \item{\Rfunction{readIllumina()}}: Illumina HumanOmniExpress .txt files, 
+    exported from GenomeStudio.
 \end{itemize}
 
-Each of these functions take the file's path as the unique mandatory argument.\\
-Optional arguments allow the user to save the following information: 
-\emph{sampleName, labName}:
+Notice that these \Rcode{read} functions have a \emph{genome}, which allow the
+user to specify what genome build to use with the current array.
+The supported genome builds are hg18, hg19 (default) and hg38. This value is
+stored, then used in the plot functions.
+
+\subsubsection{Custom arrays}
+Custom arrays can be read using \Rfunction{readGeneric()}, which leads to
+construct an object of class \Rclass{rCGH-generic}. Data as to be provided as
+a text file, with the following mandatory information.
+
+Mandatory columns for custom arrays:
+\begin{itemize}
+        \item{ProbeName}: Character strings. Typicaly the probe ids.
+        \item{ChrNum}: numeric. The chromosome numbers. In case Chr X and Y are
+        used and named as \emph{"X"} and \emph{"Y"}, these notations will be
+        converted into \emph{"23"} and \emph{"24"}, respectively.
+        \item{ChrStart}: numeric. The chromosomal probe locations.
+        \item{Log2Ratio}: numeric. The corresponding Log2Ratios.
+\end{itemize}
+
+\vspace{5mm}
+
+Each of the \Rcode{read} functions take the file's path as the unique mandatory
+argument. Other optional arguments allow the user to save supplementary
+information:  \emph{sampleName, labName}:
 
 \vspace{5mm}
 
@@ -206,8 +259,8 @@ is used \cite{Smyth}.
 Note that by default, the cyanine3 signal is used as the reference. Use 
 \Rcode{Ref=cy5} if cyanine5 signal has to be used as the reference.
 \\
-When Affymetrix cychp or cnchp files are used, these steps have already been 
-done, and \Rfunction{adjustSignal()} simply rescale the LRR, when
+In case of Affymetrix cychp or cnchp files, these steps have already been 
+processed, and \Rfunction{adjustSignal()} simply rescale the LRR, when
 \Rcode{Scale=TRUE} (default). As for Agilent data, some useful quality 
 scores: the derivative Log Ratio Spread (dLRs) and the LRR Median Absolute 
 Deviation (MAD), are stored in the object.
@@ -302,21 +355,37 @@ will be automatically set to 1 when a \texttt{Windows} system is detected.
 
 
 \subsection{Getting the by-gene table}
-The next step consists in getting access to the potentially altered genes. 
+This step converts a segmentation table into a by-genes table. 
 \Rfunction{byGeneTable()} extracts the list of genes included in each segment, 
 and constructs a dataset, easy to export and to manipulate outside R.
-The final genes' list combines position information from  
-\Biocannopkg{TxDb.Hsapiens.UCSC.hg19.knownGene}, and annotations from
-\Biocannopkg{org.Hs.eg.db}.
+The final genes' list reports the corresponding segmentation values
+(expressed in Log2Ratio), and the official positions and annotations, with
+respect to the genome build specified by the user. As for the \Rcode{read}
+functions, the supported genome builds are hg18, hg19 (default) and hg38.
+For hg19, locations and annotations are exported from 
+\Biocannopkg{TxDb.Hsapiens.UCSC.hg19.knownGene} and \Biocannopkg{org.Hs.eg.db}.
+The corresponding TxDb is used in case another genome build is specified with
+the \emph{genome} argument.
 
 \vspace{5mm}
 
 <<byGeneTable>>=
-#geneTable <- byGeneTable(cgh)
 geneTable <- byGeneTable(segTable)
 head(geneTable, n=3)
 @
 
+Notice that the \Rfunction{byGeneTable()} function takes a segmentation table 
+as its first argument, and not a \Robject{rCGH} object. This means that this
+function can be used to extract genes from any other segmentation table,
+provided this table is of the same format, and the genome build to use
+is specified (the default setting is \emph{"hg19"}).
+
+\vspace{5mm}
+
+<<byGeneTable2>>=
+byGeneTable(segTable, "erbb2", genome = "hg19")[,1:6]
+byGeneTable(segTable, "erbb2", genome = "hg18")[,1:6]
+@
 
 \subsection{Accessing the analysis parameters}
 For traceability and reproducibility, it may be useful to keep track to a
@@ -357,8 +426,12 @@ Other arguments can be used to color the segments according to specified
 gain/loss thresholds, or to change the plot title.
 \\
 Two other static functions can be useful for reporting alterations:
-\Rfunction{plotLOH()} to analyse the LOH, and \Rfunction{multiplot()} to build 
-a full report, including both the genomic profile and the LOH.
+\Rfunction{plotLOH()} to visualize LOH, and \Rfunction{multiplot()} to build 
+a full report, including both the genomic profile and LOH plot.
+
+\bioccomment{Notice that genes will be located with respect to the genome build
+version stored in the \Robject{rCGH} object. See \autoref{sec:readfile} for
+details.}
 
 \vspace{5mm}
 
@@ -366,7 +439,6 @@ a full report, including both the genomic profile and the LOH.
 multiplot(cgh, c("egfr", "erbb2"))
 @
 
-\pagebreak
 
 \incfig[h]{figure/getProfile-1}{.95\textwidth}{Static views.}
 {
@@ -397,20 +469,23 @@ center the profile, but any other peak can be chosen, using
 \Rfunction{recenter()}.
 }
 
+\pagebreak
 
 \subsubsection{Interactive visualization}
-The \Rpackage{view()} function provides a more flexible way for analyzing a 
-genomic profile, and allows interactive graph manipulations through a 
-control panel: defining the gain/loss thresholds, displaying a gene, resizing 
-the y-axis, selecting one unique chromosome, and recentering the entire profile.
-Note that the \emph{Genes table} is updated whenever changes are made through 
-that control panel, e.g. selecting one unique chromosome on the graph filters
-the \emph{Genes table} on that chromosome, simultaneously.
+The \Rpackage{view()} function provides a more flexible way for interpreting
+genomic profile, individually. This application allows interactive manipulations
+through a command panel: defining the gain/loss thresholds, displaying a gene,
+resizing the y-axis, selecting one unique chromosome, and recentering the entire
+profile. Note that the \emph{Genes table} is updated whenever changes are made
+through that command panel, e.g. selecting one unique chromosome on the graph
+filters the \emph{Genes table} on that chromosome, simultaneously.
 \\
 The Download buttons, \emph{Plot}, \emph{LOH} and \emph{Table}, allow plots and
 gene table to be exported, as they have been modified.
 
-\pagebreak
+\bioccomment{Notice that genes will be located according to the genome build
+value stored in the \Robject{rCGH} object. This value has to be specified when
+a file is read. See \autoref{sec:readfile} for details.}
 
 The \Rfunction{view()} control panel:
 \begin{itemize}
@@ -492,7 +567,7 @@ please visit\\
 toLatex(sessionInfo())
 @
 
-\pagebreak
+
 
 \bibliography{rcgh}
 

@@ -8,19 +8,58 @@
 #globalVariables(c("agilentDB", "geneDB", "hg19"), package="rCGH", add=TRUE)
 
 # Build the gene annotation DB
-geneDB  <- genes(TxDb.Hsapiens.UCSC.hg19.knownGene, columns=c("gene_id"))
-geneDB <- geneDB[order(as.vector(seqnames(geneDB)), start(geneDB))]
+#geneDB  <- genes(TxDb.Hsapiens.UCSC.hg19.knownGene, columns=c("gene_id"))
+#geneDB <- geneDB[order(as.vector(seqnames(geneDB)), start(geneDB))]
 
-# Add missing NOTCH3 & NOTCH4
-geneDB <- append(geneDB,
-    GRanges(
-        c("chr19", "chr6"),
-        IRanges(c(15270444, 32162620), c(15311792, 32191844)),
-        strand = c("-", "-"),
-        gene_id = c(4854, 4855)
-        )
-    )
-geneDB <- geneDB[order(geneDB$gene_id)]
+# # Add missing NOTCH3 & NOTCH4
+# geneDB <- append(geneDB,
+#     GRanges(
+#         c("chr19", "chr6"),
+#         IRanges(c(15270444, 32162620), c(15311792, 32191844)),
+#         strand = c("-", "-"),
+#         gene_id = c(4854, 4855)
+#         )
+#     )
+# geneDB <- geneDB[order(as.vector(seqnames(geneDB)), start(geneDB))]
+
+.createGeneDB <- function(genome){
+
+    if(genome == "hg18")
+        DB <- TxDb.Hsapiens.UCSC.hg18.knownGene
+    else if(genome == "hg38")
+        DB <- TxDb.Hsapiens.UCSC.hg38.knownGene
+    else if(genome == "hg19")
+        DB <- TxDb.Hsapiens.UCSC.hg19.knownGene
+    else
+        stop(sprintf("'%s' is not a supported genome", genome))
+
+    geneDB  <- genes(DB, columns=c("gene_id"))
+
+    if(genome == "hg19"){
+        geneDB <- append(geneDB,
+            GRanges(
+                c("chr19", "chr6"),
+                IRanges(c(15270444, 32162620), c(15311792, 32191844)),
+                strand = c("-", "-"),
+                gene_id = c(4854, 4855)
+                )
+            )
+        }
+
+    if(genome == "hg38"){
+        geneDB <- append(geneDB,
+            GRanges(
+                c("chr19", "chr6"),
+                IRanges(c(15159633, 32194843), c(15200981, 32224067)),
+                strand = c("-", "-"),
+                gene_id = c(4854, 4855)
+                )
+            )
+        }
+
+    geneDB[order(as.vector(seqnames(geneDB)), start(geneDB))]
+
+}
 
 ################################
 ## VALID METHODS
@@ -46,13 +85,14 @@ geneDB <- geneDB[order(geneDB$gene_id)]
         stop("This may be not a valid Affymetrix cytoScanHD file.")
     TRUE
 }
-
 .validrCGHObject <- function(object) {
     c0 <- inherits(object, "rCGH")
     c1 <- inherits(object, "rCGH-Agilent")
     c2 <- inherits(object, "rCGH-SNP6")
     c3 <- inherits(object, "rCGH-cytoScan")
-    if(!c0 && !c1 && !c2 && !c3)
+    c4 <- inherits(object, "rCGH-Illumina")
+    c5 <- inherits(object, "rCGH-generic")
+    if(!c0 && !c1 && !c2 && !c3 && !c4 && !c5)
         stop("Not a valid rCGH object.\n")
     TRUE
 }
@@ -70,8 +110,8 @@ geneDB <- geneDB[order(geneDB$gene_id)]
     if(verbose)
         message('Reading information...')
 
-    aInfo <- read.csv(filePath, header = FALSE, fill = TRUE, skip = 1, 
-        nrows = 8, sep = "\t")
+    aInfo <- read.delim(filePath, header = FALSE, fill = TRUE, skip = 1, 
+        nrows = 8, stringsAsFactors = FALSE, sep = "\t")
     aNames <- as.vector(aInfo[1,])
     barCode <- .getAnnot(aInfo, aNames, "FeatureExtractor_Barcode")
     gridName <- .getAnnot(aInfo, aNames, "Grid_Name")
@@ -106,7 +146,7 @@ geneDB <- geneDB[order(geneDB$gene_id)]
         cnSet$rIsFeatNonUnifOL == 1 | 
         cnSet$rIsWellAboveBG == 0)
     if(verbose)
-        message(length(flags), 'flagged probes on chromosome',
+        message(length(flags), ' flagged probes on chromosome ',
             unique(cnSet$ChrNum))
     return(flags)
 }
@@ -116,7 +156,7 @@ geneDB <- geneDB[order(geneDB$gene_id)]
         cnSet$gIsFeatNonUnifOL == 1 | 
         cnSet$gIsWellAboveBG == 0)
     if(verbose)
-        message(length(flags), 'flagged probes on chromosome',
+        message(length(flags), ' flagged probes on chromosome ',
             unique(cnSet$ChrNum))
     return(flags)
 }
@@ -258,7 +298,7 @@ geneDB <- geneDB[order(geneDB$gene_id)]
 
 .preset <- function(object){
     object@param <- list(ksmooth=NA, Kmax=20, Nmin=160, Mwidth=2,
-        UndoSD=NULL, Alpha=1e-4)
+        UndoSD=NULL, Alpha=1e-6)
     return(object)
 }
 
@@ -452,7 +492,59 @@ geneDB <- geneDB[order(geneDB$gene_id)]
     }
     return(as.numeric(ChrNum))
 }
+.readIlluminaData <- function(filePath){
 
+    snps <- SNPlocs.Hsapiens.dbSNP144.GRCh37
+
+    message("Reading data...")
+    raw <- read.delim(filePath, stringsAsFactors = FALSE)
+    raw <- raw[grepl("rs", raw$SNP.Name),]
+
+    message("Matching SNP positions in GRCh37...")
+    gr <- snpsById(snps, raw$SNP.Name, ifnotfound="drop")
+    
+    matchIds <- gr$RefSNP_id
+    raw <- raw[raw$SNP.Name %in% matchIds,]
+    ChrNum <- gsub("ch", "", as.vector(seqnames(gr)))
+    ChrNum[ChrNum == "X"] <- 23
+    ChrNum[ChrNum=="Y"] <- 24
+    ChrNum <- as.numeric(ChrNum)
+    ChrStart <- start(gr)
+    raw <- cbind.data.frame(ProbeName = raw[,1], ChrNum = ChrNum,
+        ChrStart = ChrStart, raw[,-1])
+    raw <- raw[order(raw$ChrNum, raw$ChrStart),]
+    colnames(raw)[grep("Log.R.Ratio", colnames(raw))] <- "Log2Ratio"
+    colnames(raw)[grep("B.Allele.Freq", colnames(raw))] <- "Allele.Difference"
+    return(
+        raw[,c("ProbeName","ChrNum","ChrStart","Log2Ratio","Allele.Difference")]
+        )    
+}
+
+.readGeneric <- function(filePath){
+
+    message("Reading data...")
+    raw <- read.delim(filePath, stringsAsFactors = FALSE)
+    expectedNames <- c("ProbeName", "ChrNum", "ChrStart", "Log2Ratio")
+
+    if(!all(expectedNames %in% colnames(raw))){
+        msg1 <- "Expected colnames are: \n"
+        msg2 <- sprintf("%s\t", expectedNames)
+        msg3 <- "\nIn your data: \n"
+        msg4 <- sprintf("%s\t", colnames(raw))
+        stop(c(msg1, msg2, msg3, msg4))
+    }
+
+    ChrNum <- raw$ChrNum
+    if(any(ChrNum == "X"))
+        ChrNum[which(ChrNum == "X")] <- 23
+    if(any(ChrNum == "Y"))
+        ChrNum[which(ChrNum == "Y")] <- 24
+
+    raw$ChrNum <- as.numeric(ChrNum)
+    raw <- raw[order(raw$ChrNum, raw$ChrStart), expectedNames]
+
+    return(raw)    
+}
 
 ###############################################
 ## helpers called in adjustSignal.R
@@ -503,7 +595,9 @@ geneDB <- geneDB[order(geneDB$gene_id)]
         stop("Vector length>2 needed for computation")
     }
 
-    tmp <- embed(x,2)
+    Q <- quantile(x, c(.025, .975))
+    x <- x[which(x>=Q[1] & x<=Q[2])]
+    tmp <- embed(x, 2)
     diffs <- tmp[,2]-tmp[,1]
     dlrs <- IQR(diffs, na.rm = TRUE)/(sqrt(2)*1.34)
     return(dlrs)
@@ -602,7 +696,7 @@ geneDB <- geneDB[order(geneDB$gene_id)]
             loh={.model <- .modelLOH}
         )
     
-    alpha <- 2.5e3
+    alpha <- 2e3
     if(method == "loh"){
         signal <- scale(signal, scale=FALSE)
         alpha <- 2.5e3
@@ -761,6 +855,15 @@ geneDB <- geneDB[order(geneDB$gene_id)]
         segTable$loc.start[j] <- segTable$loc.start[i]
     }
     segTable$num.mark[j] <- segTable$num.mark[j] + segTable$num.mark[i]
+    segTable$seg.mean[j] <- ifelse(
+        abs(segTable$seg.mean[i]) <= abs(segTable$seg.mean[j]),
+        segTable$seg.mean[i], segTable$seg.mean[j]
+        )
+    segTable$seg.med[j] <- ifelse(
+        abs(segTable$seg.med[i]) <= abs(segTable$seg.med[j]),
+        segTable$seg.med[i], segTable$seg.med[j]
+        )
+
     return(segTable)
 }
 
@@ -797,7 +900,7 @@ geneDB <- geneDB[order(geneDB$gene_id)]
 }
 
 .probeSegValue <- function(segTable, use.medians){
-    segVal <- segTable$seg.mean
+    segVal <- segTable$seg.med
     if(use.medians){
         segVal <- segTable$seg.med
     }
@@ -811,20 +914,20 @@ geneDB <- geneDB[order(geneDB$gene_id)]
 ## helpers called in byGeneTable.R
 ###############################################
 
-.cmValues <- function(segTable, hg){
-    cmLocs <- .locateCM(segTable, hg)
+.cmValues <- function(segTable, HG){
+    cmLocs <- .locateCM(segTable, HG)
     out <- lapply(cmLocs, function(locs){
         c(segTable$seg.med[locs[1]], segTable$seg.med[locs[2]])
         })
     return(out)
 }
-.locateCM <- function(segTable, hg){
+.locateCM <- function(segTable, HG){
 
     chrs <- unique(segTable$chrom)
     cmLocs <- lapply(chrs, function(chr){
 
-        cStart <- hg$centromerStart[hg$chrom==chr]
-        cEnd <- hg$centromerEnd[hg$chrom==chr]
+        cStart <- HG$centromerStart[HG$chrom==chr]
+        cEnd <- HG$centromerEnd[HG$chrom==chr]
         tmp <- segTable[segTable$chrom==chr,]
 
         locStart <- which(tmp$loc.start<=cStart & cStart<=tmp$loc.end)
@@ -842,11 +945,11 @@ geneDB <- geneDB[order(geneDB$gene_id)]
 
     return(cmLocs)
 }
-.relativeLog <- function(bygene, cmValues, hg){
+.relativeLog <- function(bygene, cmValues, HG){
     relativeLog <- lapply(1:length(cmValues), function(chr){
         tmp <- bygene[bygene$chr==chr, ]
-        ii <- which(tmp$chrStart < hg$centromerStart[hg$chrom==chr])
-        jj <- which(tmp$chrStart > hg$centromerEnd[hg$chrom==chr])
+        ii <- which(tmp$chrStart < HG$centromerStart[HG$chrom==chr])
+        jj <- which(tmp$chrStart > HG$centromerEnd[HG$chrom==chr])
         rl <- rep(NA, nrow(tmp))
         rl[ii] <- tmp$Log2Ratio[ii] - cmValues[[chr]][1]
         rl[jj] <- tmp$Log2Ratio[jj] - cmValues[[chr]][2]
@@ -873,7 +976,7 @@ geneDB <- geneDB[order(geneDB$gene_id)]
         if(is.null(idx))
             return(NULL)
         
-        lrr <- segTable$seg.mean[idx]
+        lrr <- segTable$seg.med[idx]
         l <- abs(segTable$loc.end[idx] - segTable$loc.start[idx])/1e3
         nm <- segTable$num.mark[idx]
         cbind("symbol"=gene, "Log2Ratio"=lrr,
@@ -884,14 +987,10 @@ geneDB <- geneDB[order(geneDB$gene_id)]
     if(is.null(segValues))
         return(NULL)
     
-#    colnames(segValues) <- c("symbol", "Log2Ratio", "num.mark",
-#                            "segNum", "segLength(kb)")
-
     as.data.frame(segValues)
 }
-.getSegFromGene <- function(segTable, symbol){
+.getSegFromGene <- function(segTable, symbol, HG, geneDB){
 
-    geneDB <- geneDB
     symbol <- toupper(symbol)
     
     suppressMessages(
@@ -914,13 +1013,11 @@ geneDB <- geneDB[order(geneDB$gene_id)]
     bygene <- .renameGeneList(bygene)
     segValues <- .bygeneToSegValues(bygene, segTable)
     bygene <- merge(bygene, segValues, by = "symbol", all = TRUE)
-    .addGenomeLoc(bygene)
+    .addGenomeLoc(bygene, HG)
 }
-.getGenesFromSeg <- function(chr, Start, End){
+.getGenesFromSeg <- function(chr, Start, End, geneDB){
     # chr: a integer, from 1 to 24
     # Start, End: numeric. Start/End segment position (from segmentation table)
-
-    geneDB <- geneDB
 
     if(chr==23) chr <- "X"
     if(chr==24) chr <- "Y"
@@ -936,20 +1033,13 @@ geneDB <- geneDB[order(geneDB$gene_id)]
         return(NULL)
 
     suppressMessages(
-        bySymbol <- try(select(org.Hs.eg.db,
-                            keys=geneDB$gene_id[idx],
-                            keytype='ENTREZID',
-                            columns=c('SYMBOL', 'GENENAME', 'MAP')
-                            ), silent = TRUE)
+        bySymbol <- select(org.Hs.eg.db,
+                        keys=geneDB$gene_id[idx],
+                        keytype='ENTREZID',
+                        columns=c('SYMBOL', 'GENENAME', 'MAP')
+                        )
         )
-
-    if(inherits(bySymbol, "try-error"))
-        return(NULL)
-
-    byRange <- try(as.data.frame(geneDB[idx]),
-        silent = TRUE)
-    if(inherits(byRange, "try-error"))
-        return(NULL)
+    byRange <- as.data.frame(geneDB[idx])
         
     geneList <- merge(bySymbol, byRange,
                         by.x = "ENTREZID", by.y = "gene_id", all = TRUE)
@@ -975,12 +1065,12 @@ geneDB <- geneDB[order(geneDB$gene_id)]
     geneList
 }
 
-.addGenomeLoc <- function(bygene){
-    hg19 <- hg19
+.addGenomeLoc <- function(bygene, HG){
+#    hg19 <- hg19
     ss <- split(bygene, bygene$chr)
     bygene <- lapply(ss, function(tmp){
         chr <- unique(tmp$chr)
-        tmp$genomeStart <- tmp$chrStart + hg19$cumlen[chr]
+        tmp$genomeStart <- tmp$chrStart + HG$cumlen[chr]
         return(tmp)
     })
     bygene <- as.data.frame(do.call(rbind, bygene))
@@ -994,16 +1084,22 @@ geneDB <- geneDB[order(geneDB$gene_id)]
 
     bygene
 }
+.ByGene <- function(st, symbol, genome, verbose){
 
-.ByGene <- function(st, symbol, verbose){
+    hg18 <- hg18; hg19 <- hg19; hg38 <- hg38
 
-    hg19 <- hg19
+    HG <- switch(genome,
+        hg18 = hg18,
+        hg19 = hg19,
+        hg38 = hg38)
+
+    geneDB <- .createGeneDB(genome)
 
     if(!"seg.med" %in% colnames(st))
         st$seg.med <- st$seg.mean
 
     if(!is.null(symbol))
-        return(.getSegFromGene(st, symbol))
+        return(.getSegFromGene(st, symbol, HG, geneDB))
 
     if(verbose) message("Creating byGene table...")
     bygene <- lapply(seq_len(nrow(st)), function(ii){
@@ -1013,7 +1109,7 @@ geneDB <- geneDB[order(geneDB$gene_id)]
         l <- abs(e - s)/1e3
         lrr <- st$seg.med[ii]
         nm <- st$num.mark[ii]
-        g <- .getGenesFromSeg(chr, s, e)
+        g <- .getGenesFromSeg(chr, s, e, geneDB)
         if(is.null(g))
             return(NULL)
 
@@ -1025,11 +1121,10 @@ geneDB <- geneDB[order(geneDB$gene_id)]
                         )
     })
     bygene <- do.call(rbind, bygene)
-    cmValues <- .cmValues(st, hg19)
-    bygene$relativeLog <- .relativeLog(bygene, cmValues, hg19)
-    .addGenomeLoc(bygene)
+    cmValues <- .cmValues(st, HG)
+    bygene$relativeLog <- .relativeLog(bygene, cmValues, HG)
+    .addGenomeLoc(bygene, HG)
 }
-
 .getPatientId <- function(sampleId){
     gsub("(.*)_(.*)_(.*)+", "\\2", sampleId)
 }
@@ -1085,13 +1180,12 @@ geneDB <- geneDB[order(geneDB$gene_id)]
 ###############################################
 ## helpers called in view.R
 ###############################################
-.convertLoc <- function(Table){
-    hg19 <- hg19
+.convertLoc <- function(Table, HG){
     ss <- split(Table, Table$chrom)
     sconv <- lapply(ss, function(tmp){
         chr <- unique(tmp$chrom)
-        tmp$loc.start <- tmp$loc.start + hg19$cumlen[chr]
-        tmp$loc.end <- tmp$loc.end + hg19$cumlen[chr]
+        tmp$loc.start <- tmp$loc.start + HG$cumlen[chr]
+        tmp$loc.end <- tmp$loc.end + HG$cumlen[chr]
         return(tmp)
         })
     return(as.data.frame(do.call(rbind, sconv)))

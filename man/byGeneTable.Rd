@@ -13,7 +13,8 @@ the closest centromere.
 }
 
 \usage{
-    byGeneTable(segTable, symbol = NULL, verbose = TRUE)
+    byGeneTable(segTable, symbol = NULL,
+        genome = c("hg19", "hg18", "hg38"), verbose = TRUE)
 }
 
 \arguments{
@@ -24,6 +25,10 @@ the closest centromere.
     \item{symbol}{
     : character. A valid HUGO symbol. When \code{NULL} the full gene table is
     returned, the corresponding gene information only o/w.
+    }
+    \item{genome}{
+    : string. The genome build to use. Supported genomes are \code{hg18},
+    \code{hg19} (default), and \code{hg38}.
     }
     \item{verbose}{
     : logical. When \code{TRUE} progress is printed.
