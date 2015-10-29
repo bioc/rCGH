@@ -7,13 +7,13 @@
 
 \description{
 Class \code{"\linkS4class{rCGH}"} is a superclass living on top of
-\code{"\linkS4class{rCGH-Agilent}"}, \code{"\linkS4class{rCGH-SNP6}"}, and 
-\code{"\linkS4class{rCGH-cytoScan}"}. These objects inherit most of the
-properties of the superclass, but specific parametrizations used during the
-analysis process.\cr
+\code{"\linkS4class{rCGH-Agilent}"}, \code{"\linkS4class{rCGH-SNP6}"}, 
+\code{"\linkS4class{rCGH-cytoScan}"}, and \code{"\linkS4class{rCGH-generic}"}.
+These objects inherit most of the properties of the superclass, but specific
+parametrizations used during the analysis process.\cr
 Objects are created by platform-specific \code{read} functions:
 \code{"\link{readAgilent}"}, \code{"\link{readAffySNP6}"},
-\code{"\link{readAffyCytoScan}"}, and \code{"\link{readIllumina}"},
+and \code{"\link{readAffyCytoScan}"},
 each corresponding to their matched file format.\cr
 A supplementary \code{"\link{readGeneric}"} allows the user to create a 
 \code{"\linkS4class{rCGH}"} object from custom arrays.
@@ -61,8 +61,7 @@ Frederic Commo
 
 \seealso{
 \code{"\linkS4class{rCGH-Agilent}"}, \code{"\linkS4class{rCGH-SNP6}"},
-\code{"\linkS4class{rCGH-cytoScan}"},\code{"\linkS4class{rCGH-Illumina}"}
-\code{"\linkS4class{rCGH-generic}"}
+\code{"\linkS4class{rCGH-cytoScan}"}, \code{"\linkS4class{rCGH-generic}"}
 }
 
 \examples{

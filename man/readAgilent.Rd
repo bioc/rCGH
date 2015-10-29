@@ -56,7 +56,7 @@ Frederic Commo
 
 \seealso{
 \code{\link{readAffyCytoScan}}, \code{\link{readAffySNP6}},
-\code{\link{readIllumina}}, \code{\link{readGeneric}},
+\code{\link{readGeneric}},
 \code{\link{setInfo}}, \code{\link{getInfo}}
 }
 

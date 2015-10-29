@@ -102,7 +102,7 @@ integrating functionalities specifically designed for precision medicine.
 , and facilitates genomic profiles interpretation and decision-making through 
 interactive visualizations.\\
 \Rpackage{rCGH} supports commercial arrays : Agilent (from 44K to 400K arrays),
-Affymetrix SNP6.0 and cytoScanHD, and Illumina HumanOmniExpress. Custom arrays
+and Affymetrix SNP6.0 and cytoScanHD. Custom arrays
 can also be supported, provided a suitable data format is passed. See
 \autoref{sec:readfile} for details.
 
@@ -140,9 +140,9 @@ next sections.
 Notice that \Rclass{rCGH} is a superclass designed for calling common methods.
 Depending on the type of array and the \emph{read} functions used, the 
 resulting objects will be assigned to classes \Rclass{rCGH-Agilent}, 
-\Rclass{rCGH-SNP6}, \Rclass{rCGH-cytoScan}, \Rclass{rCGH-Illumina},
-or \Rclass{rCGH-generic}. These classes inherit from the superclass, and allow
-array-specific pre-parametrizations.\\
+\Rclass{rCGH-SNP6}, \Rclass{rCGH-cytoScan}, or \Rclass{rCGH-generic}.
+These classes inherit from the superclass, and allow array-specific
+pre-parametrizations.\\
 \Rclass{rCGH-generic} is a particular class, not dedicated to a specific
 platform. The associated \Rfunction{readGeneric} read function allows the
 creation of a \Rclass{rCGH} object from custom arrays, provided the data
@@ -159,20 +159,14 @@ at each step.
 \label{sec:readfile}
 
 \subsubsection{Commercial arrays}
-Agilent Feature Exraction files (from 44K to 400K arrays), Affymetrix 
-SNP6 and cytoScanHD, and Illumina HumanOmniExpress data are supported.\\
-To keep more flexibility, Affymetrix and Illumina raw data have to be processed
-first with the corresponding platform-specific tools:
+Agilent Feature Exraction files (from 44K to 400K arrays), and Affymetrix 
+SNP6.0 and cytoScanHD data are supported.\\
+To keep more flexibility, Affymetrix CEL files have to be first read using ChAS
+or Affymetrix Power Tools (APT) \cite{Affy}, and then exported as cychp.txt or
+cnchp.txt files. Notice that cnchp.txt files contain Allelic differences, that
+allow the loss of heterozygosity (LOH) to be estimated, while cychp.txt files
+do not.
 
-\begin{itemize}
-    \item{Affymetrix}: CEL files have to be first read using ChAS or Affymetrix
-    Power Tools (APT) \cite{Affy}, and then exported as cychp.txt or cnchp.txt
-    files.\\
-    Notice that cnchp.txt files contain Allelic differences, that allow the loss
-    of heterozygosity (LOH) to be estimated, while cychp.txt files do not.
-    \item{Illumina HumanOmniExpress} .txt files can be exported from
-    GenomeStudio.
-\end{itemize}
 
 Due to specific files structures, and since preambles may be missing (depending
 on ChAS and APT versions), \Rpackage{rCGH} provides specific read/build-object
@@ -184,8 +178,6 @@ functions:
     exported from SNP6.0 CEL, through ChAS or APT.
     \item{\Rfunction{readAffyCytoScan()}}: cychp, cnchp and probeset (.txt)
     files, exported from CytoScanHD CEL, through ChAS or APT.
-    \item{\Rfunction{readIllumina()}}: Illumina HumanOmniExpress .txt files, 
-    exported from GenomeStudio.
 \end{itemize}
 
 Notice that these \Rcode{read} functions have a \emph{genome}, which allow the

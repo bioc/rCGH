@@ -343,7 +343,6 @@ setMethod(f="view",
                     Please run segmentCGH() first.\n"
             )
         } else{
-            segTable <- segTable[which(segTable$chrom %in% 1:23),]
             segTable$num.mark <- round(segTable$num.mark/w)
             saveRDS(segTable, file=file.path(path, "data/st.rds"))
             cat(genome, file = file.path(path, "data/hg.txt"), sep = "\n")

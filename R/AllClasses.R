@@ -21,7 +21,7 @@ setClass(
 setClass('rCGH-Agilent', contains = 'rCGH')
 setClass('rCGH-SNP6', contains = 'rCGH')
 setClass('rCGH-cytoScan', contains = 'rCGH')
-setClass('rCGH-Illumina', contains = 'rCGH')
+#setClass('rCGH-Illumina', contains = 'rCGH')
 setClass('rCGH-generic', contains = 'rCGH')
 
 

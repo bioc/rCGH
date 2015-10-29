@@ -1,6 +1,13 @@
 R News
 
 
+rCGH package 1.1.4
+-----------------------
+NEW FEATURES
+    * Read Illumina HumanOmniExpress: this function has been temporarily
+    removed. Illumina data require to much memory for annotating probes.
+
+
 rCGH package 1.1.3
 -----------------------
 

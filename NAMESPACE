@@ -14,12 +14,10 @@ import(org.Hs.eg.db)
 import(TxDb.Hsapiens.UCSC.hg18.knownGene)
 import(TxDb.Hsapiens.UCSC.hg19.knownGene)
 import(TxDb.Hsapiens.UCSC.hg38.knownGene)
-import(SNPlocs.Hsapiens.dbSNP144.GRCh37)
 import(GenomeInfoDb)
 import(GenomicRanges)
 import(GenomicFeatures)
 import(AnnotationDbi)
-import(BSgenome)
 
 
 ## IMPORTS FROM

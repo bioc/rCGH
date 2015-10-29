@@ -59,7 +59,7 @@ Frederic Commo
 
 \seealso{
 \code{\link{readAgilent}}, \code{\link{readAffySNP6}},
-\code{\link{readIllumina}}, \code{\link{readGeneric}},
+\code{\link{readGeneric}},
 \code{\link{setInfo}}, \code{\link{getInfo}}
 }
 

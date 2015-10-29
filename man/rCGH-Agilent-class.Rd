@@ -52,7 +52,7 @@ Frederic Commo
 
 \seealso{
 \code{"\linkS4class{rCGH}"}, \code{"\linkS4class{rCGH-cytoScan}"}, 
-\code{"\linkS4class{rCGH-SNP6}"}
+\code{"\linkS4class{rCGH-SNP6}"}, \code{"\linkS4class{rCGH-generic}"}
 }
 
 \examples{
