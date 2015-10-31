@@ -117,35 +117,6 @@ readAffyCytoScan <- function(filePath, sampleName=NA, labName=NA,
     return (object)
 }
 
-################################
-## Build a Illumina object
-################################
-# readIllumina <- function(filePath, sampleName=NA, labName=NA,
-#     genome = c("hg19", "hg18", "hg38"), verbose=TRUE){
-
-#     fileName <- gsub("(.*)/", "", filePath)
-#     genome <- match.arg(genome)
-#     object <- new(
-#         "rCGH-Illumina",
-#         info = c(fileName=fileName, sampleName=sampleName,
-#                 labName=labName, usedProbes="snp", genome = genome)
-#     )
-    
-#     object@cnSet <- .readIlluminaData(filePath)
-
-#     if(verbose) 
-#         message("Adding presettings...")
-
-#     object <- .preset(object)
-#     setInfo(object, "rCGH_version") <- as.character(packageVersion("rCGH"))
-    
-# #    .createGeneDB(genome)
-
-#     if(verbose)
-#         message("Genome build: ", genome)
-
-#     return(object)
-# }
 
 ################################
 ## Build a generic object

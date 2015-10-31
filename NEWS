@@ -1,6 +1,12 @@
 R News
 
 
+rCGH package 1.1.5
+-----------------------
+Cleaner version from 1.1.4.
+Should not give any warning due to functions masked by imported packages
+
+
 rCGH package 1.1.4
 -----------------------
 NEW FEATURES

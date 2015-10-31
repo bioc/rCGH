@@ -492,33 +492,6 @@
     }
     return(as.numeric(ChrNum))
 }
-# .readIlluminaData <- function(filePath){
-
-#     snps <- SNPlocs.Hsapiens.dbSNP144.GRCh37
-
-#     message("Reading data...")
-#     raw <- read.delim(filePath, stringsAsFactors = FALSE)
-#     raw <- raw[grepl("rs", raw$SNP.Name),]
-
-#     message("Matching SNP positions in GRCh37...")
-#     gr <- snpsById(snps, raw$SNP.Name, ifnotfound="drop")
-    
-#     matchIds <- gr$RefSNP_id
-#     raw <- raw[raw$SNP.Name %in% matchIds,]
-#     ChrNum <- gsub("ch", "", as.vector(seqnames(gr)))
-#     ChrNum[ChrNum == "X"] <- 23
-#     ChrNum[ChrNum=="Y"] <- 24
-#     ChrNum <- as.numeric(ChrNum)
-#     ChrStart <- start(gr)
-#     raw <- cbind.data.frame(ProbeName = raw[,1], ChrNum = ChrNum,
-#         ChrStart = ChrStart, raw[,-1])
-#     raw <- raw[order(raw$ChrNum, raw$ChrStart),]
-#     colnames(raw)[grep("Log.R.Ratio", colnames(raw))] <- "Log2Ratio"
-#     colnames(raw)[grep("B.Allele.Freq", colnames(raw))] <- "Allele.Difference"
-#     return(
-#         raw[,c("ProbeName","ChrNum","ChrStart","Log2Ratio","Allele.Difference")]
-#         )    
-# }
 
 .readGeneric <- function(filePath){
 
