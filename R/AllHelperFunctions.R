@@ -562,17 +562,17 @@
 }
 
 .dlrs <- function(x){
-    nx <- length(x)
 
-    if (nx<3){
+    if (length(x) < 3)
         stop("Vector length>2 needed for computation")
-    }
 
-    Q <- quantile(x, c(.025, .975))
-    x <- x[which(x>=Q[1] & x<=Q[2])]
-    tmp <- embed(x, 2)
-    diffs <- tmp[,2]-tmp[,1]
+#    tmp <- embed(x, 2)
+#    diffs <- tmp[,2]-tmp[,1]
+    diffs <- diff(x)
+    Q <- quantile(diffs, probs = c(.025, .975), na.rm = TRUE)
+    diffs <- diffs[which(diffs>=Q[1] & diffs<=Q[2])]
     dlrs <- IQR(diffs, na.rm = TRUE)/(sqrt(2)*1.34)
+
     return(dlrs)
 }
 
@@ -810,34 +810,30 @@
 
     return(adjustedLocs)
 }
-.getCloser <- function(segTable, idx){
+.getCloser <- function(sst, idx){
     if(idx==1){
         return(idx+1)
-    } else if (idx==nrow(segTable)){
+    } else if (idx==nrow(sst)){
         return(idx-1)
     } else {
-        delta <- abs(segTable$seg.mean[c(idx-1,idx+1)] - segTable$seg.mean[idx])
+        delta <- abs(sst$seg.mean[c(idx-1,idx+1)] - sst$seg.mean[idx])
         i <- ifelse(which.min(delta)==1, idx-1, idx+1)
         return(i)
     }
 }
-.mergeSegments <- function(segTable, i, j){
+.mergeSegments <- function(sst, i, j){
     if(j<i){
-        segTable$loc.end[j] <- segTable$loc.end[i]
+        sst$loc.end[j] <- sst$loc.end[i]
     } else {
-        segTable$loc.start[j] <- segTable$loc.start[i]
+        sst$loc.start[j] <- sst$loc.start[i]
     }
-    segTable$num.mark[j] <- segTable$num.mark[j] + segTable$num.mark[i]
-    segTable$seg.mean[j] <- ifelse(
-        abs(segTable$seg.mean[i]) <= abs(segTable$seg.mean[j]),
-        segTable$seg.mean[i], segTable$seg.mean[j]
-        )
-    segTable$seg.med[j] <- ifelse(
-        abs(segTable$seg.med[i]) <= abs(segTable$seg.med[j]),
-        segTable$seg.med[i], segTable$seg.med[j]
-        )
-
-    return(segTable)
+    sst$num.mark[j] <- sst$num.mark[j] + sst$num.mark[i]
+    sst$seg.mean[j] <- ifelse(
+        abs(sst$seg.mean[i]) <= abs(sst$seg.mean[j]),
+        sst$seg.mean[i], sst$seg.mean[j]
+    )
+    
+    return(sst)
 }
 
 .computeMedSegm <- function(segTable, L2R){

@@ -252,10 +252,17 @@ setMethod(f="segmentCGH",
         segTable <- .computeSegmentation(L2R, Chr, Pos, sampleName,
             params, nCores)
 
-        if(verbose)
-            message("Merging segments shorter than ", minLen, "Kb.")
-        segTable <- .smoothSeg(segTable, minLen)
+        if(!is.null(minLen) && minLen < 0){
+            message("'minLen', the minimal segment length can't be < 0")
+            minLen <- NULL
+        }
 
+        if(!is.null(minLen)){
+            if(verbose)
+                message("Merging segments shorter than ", minLen, "Kb.")
+            segTable <- .smoothSeg(segTable, minLen)
+        }
+        
         segTable <- .computeMedSegm(segTable, L2R)
         segTable <- .mergeLevels(segTable)
         probeValues.left <- .probeSegValue(segTable, use.medians = TRUE)

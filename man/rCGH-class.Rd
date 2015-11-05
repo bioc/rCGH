@@ -9,8 +9,8 @@
 Class \code{"\linkS4class{rCGH}"} is a superclass living on top of
 \code{"\linkS4class{rCGH-Agilent}"}, \code{"\linkS4class{rCGH-SNP6}"}, 
 \code{"\linkS4class{rCGH-cytoScan}"}, and \code{"\linkS4class{rCGH-generic}"}.
-These objects inherit most of the properties of the superclass, but specific
-parametrizations used during the analysis process.\cr
+These objects inherit most of the properties of the superclass, and allow
+specific parameterizations used during the analysis process.\cr
 Objects are created by platform-specific \code{read} functions:
 \code{"\link{readAgilent}"}, \code{"\link{readAffySNP6}"},
 and \code{"\link{readAffyCytoScan}"},

@@ -1,6 +1,13 @@
 R News
 
 
+rCGH package 1.1.6
+-----------------------
+BUG FIXES
+    * Errors occured when mergin short segments, with respect to the minLen
+    argument in segmentCGH().
+
+
 rCGH package 1.1.5
 -----------------------
 Cleaner version from 1.1.4.
@@ -11,7 +18,8 @@ rCGH package 1.1.4
 -----------------------
 NEW FEATURES
     * Read Illumina HumanOmniExpress: this function has been temporarily
-    removed. Illumina data require to much memory for annotating probes.
+    removed. Illumina data require to much memory for annotating probes when
+    probe locations are missing in the data.
 
 
 rCGH package 1.1.3

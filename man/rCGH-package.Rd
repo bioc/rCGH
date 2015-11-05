@@ -4,22 +4,21 @@
 \docType{package}
 
 \title{
-Comprehensive Pipeline for Analyzing and Visualizing Agilent and
-    Affymetrix Array-Based CGH Data
+Comprehensive Pipeline for Analyzing and Visualizing Array-Based CGH Data
 }
 
 \description{
-A comprehensive pipeline for analyzing and interactively
-visualizing genomic profiles generated through Agilent and Affymetrix
-microarrays.\cr
-As inputs, rCGH supports Agilent dual-color Feature Extraction files (.txt),
-from 44 to 400K, and Affymetrix SNP6.0 and cytoScan probeset.txt, cychp.txt,
-and cnchp.txt files, exported from ChAS or Affymetrix Power Tools.\cr
-This package takes over all the steps required for a genomic profile analysis,
-from reading the files to the segmentation and genes annotations, and provides
-several visualization functions (static or interactive) which facilitate
-profiles interpretation.\cr
-Input files can be in compressed format, e.g. \code{.bz2} or \code{.gz}.
+    A comprehensive pipeline for analyzing and interactively visualizing genomic
+    profiles generated through commercial or custom aCGH arrays. As inputs, rCGH
+    supports Agilent dual-color Feature Extraction files (.txt), from 44 to
+    400K, Affymetrix SNP6.0 and cytoScanHD probeset.txt, cychp.txt, and
+    cnchp.txt files exported from ChAS or Affymetrix Power Tools.\cr
+    rCGH also supports custom arrays, provided data is
+    in a suitable format. This package takes over all the steps required for
+    individual genomic profiles analysis, from reading files to segmenting
+    and annotating genes. This package provides several visualization functions
+    (static or interactive) which facilitate individual profiles interpretation.
+    Input files can be in compressed format, e.g. .bz2 or .gz.
 }
 
 \author{
@@ -34,26 +33,26 @@ Frederic Commo <frederic.commo@gustaveroussy.fr>
 
 \seealso{
 \code{\link{readAgilent}}, \code{\link{readAffySNP6}},
-\code{\link{readAffyCytoScan}}
+\code{\link{readAffyCytoScan}}, \code{\link{readGeneric}}
 }
 
 \examples{
 
 filePath <- system.file("extdata", "Affy_cytoScan.cyhd.CN5.CNCHP.txt.bz2",
     package = "rCGH")
-object1 <- readAffyCytoScan(filePath, sampleName = "AffyScHD")
+cgh <- readAffyCytoScan(filePath, sampleName = "AffyScHD")
 
-object2 <- adjustSignal(object1, nCores=1)
-object3 <- EMnormalize(object2)
-object4 <- segmentCGH(object3, nCores=1)
+cgh <- adjustSignal(cgh, nCores=1)
+cgh <- EMnormalize(cgh)
+cgh <- segmentCGH(cgh, nCores=1)
 
 # Static visalizations
-plotDensity(object4)
-multiplot(object4)
+plotDensity(cgh)
+multiplot(cgh)
 
 \dontrun{
 # Interactive visalizations
-view(object4)
+view(cgh)
 }
 
 }
