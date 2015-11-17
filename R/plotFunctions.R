@@ -157,7 +157,7 @@ setMethod(f="plotProfile",
 
         if(!is.null(symbol)){
             bg <- byGeneTable(getSegTable(object, minLen),
-                symbol, getInfo(object, "genome"), TRUE)
+                symbol, getInfo(object, "genome"), NA, FALSE)
             return(.addTagToPlot(gPlot, bg))
             }
 

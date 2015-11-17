@@ -1,6 +1,14 @@
 R News
 
 
+rCGH package 1.1.7
+-----------------------
+NEW FEATURES
+    * The user can now specify what supplementary genes annotations to export
+    through the byGeneTable() function. Allowed annotations are those supported
+    by the 'select' method from the 'AnnotationDbi' bioconductor package.
+
+
 rCGH package 1.1.6
 -----------------------
 BUG FIXES

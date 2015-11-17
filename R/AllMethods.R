@@ -277,9 +277,9 @@ setMethod(f="segmentCGH",
 )
 
 byGeneTable <- function(segTable, symbol = NULL,
-    genome = c("hg19", "hg18", "hg38"), verbose = TRUE){
+    genome = c("hg19", "hg18", "hg38"), columns = NA, verbose = TRUE){
 
     genome <- match.arg(genome)
-    .ByGene(segTable, symbol, genome, verbose)
+    .ByGene(segTable, symbol, genome, columns, verbose)
 
     }

@@ -958,15 +958,24 @@
     
     as.data.frame(segValues)
 }
-.getSegFromGene <- function(segTable, symbol, HG, geneDB){
+.getSegFromGene <- function(segTable, symbol, HG, geneDB, columns){
 
     symbol <- toupper(symbol)
-    
+
+    cols <- c('SYMBOL','ENTREZID', 'GENENAME', 'MAP')
+    if(!all(is.na(columns)))
+        if(!all(columns %in% columns(org.Hs.eg.db))){
+            noMatch <- setdiff(columns, columns(org.Hs.eg.db))
+            stop(sprintf("Item not allowed: %s", columns[noMatch]))
+        } else{
+            cols <- c(cols, columns)
+        }
+
     suppressMessages(
         bySymbol <- try(select(org.Hs.eg.db,
                         keys = symbol,
                         keytype = 'SYMBOL',
-                        columns = c('SYMBOL','ENTREZID', 'GENENAME', 'MAP')
+                        columns = cols
                         ), silent = TRUE)
         )
 
@@ -984,7 +993,7 @@
     bygene <- merge(bygene, segValues, by = "symbol", all = TRUE)
     .addGenomeLoc(bygene, HG)
 }
-.getGenesFromSeg <- function(chr, Start, End, geneDB){
+.getGenesFromSeg <- function(chr, Start, End, geneDB, columns){
     # chr: a integer, from 1 to 24
     # Start, End: numeric. Start/End segment position (from segmentation table)
 
@@ -1001,11 +1010,20 @@
     if(length(idx) == 0)
         return(NULL)
 
+    cols <- c('SYMBOL','ENTREZID', 'GENENAME', 'MAP')
+    if(!all(is.na(columns)))
+        if(!all(columns %in% columns(org.Hs.eg.db))){
+            noMatch <- setdiff(columns, columns(org.Hs.eg.db))
+            stop(sprintf("Item not allowed: %s", columns[noMatch]))
+        } else{
+            cols <- c(cols, columns)
+        }
+
     suppressMessages(
         bySymbol <- select(org.Hs.eg.db,
                         keys=geneDB$gene_id[idx],
                         keytype='ENTREZID',
-                        columns=c('SYMBOL', 'GENENAME', 'MAP')
+                        columns=cols
                         )
         )
     byRange <- as.data.frame(geneDB[idx])
@@ -1035,7 +1053,7 @@
 }
 
 .addGenomeLoc <- function(bygene, HG){
-#    hg19 <- hg19
+
     ss <- split(bygene, bygene$chr)
     bygene <- lapply(ss, function(tmp){
         chr <- unique(tmp$chr)
@@ -1046,14 +1064,18 @@
     bygene <- bygene[order(bygene$symbol),]
     rownames(bygene) <- seq_len(nrow(bygene))
     
-    for(jj in 5:ncol(bygene)){
-        if(colnames(bygene)[jj] != "strand")
-            bygene[,jj] <- as.numeric(as.character(bygene[,jj]))
+    # Render numeric
+    renderNum <- c("chr", "chrStart", "chrEnd", "width", "Log2Ratio",
+                    "num.mark", "segNum", "segLength(kb)", "relativeLog",
+                    "genomeStart")
+    idx <- which(colnames(bygene) %in% renderNum)
+    for(jj in idx){
+        bygene[,jj] <- as.numeric(as.character(bygene[,jj]))
     }
 
     bygene
 }
-.ByGene <- function(st, symbol, genome, verbose){
+.ByGene <- function(st, symbol, genome, columns, verbose){
 
     hg18 <- hg18; hg19 <- hg19; hg38 <- hg38
 
@@ -1068,7 +1090,7 @@
         st$seg.med <- st$seg.mean
 
     if(!is.null(symbol))
-        return(.getSegFromGene(st, symbol, HG, geneDB))
+        return(.getSegFromGene(st, symbol, HG, geneDB, columns))
 
     if(verbose) message("Creating byGene table...")
     bygene <- lapply(seq_len(nrow(st)), function(ii){
@@ -1078,7 +1100,7 @@
         l <- abs(e - s)/1e3
         lrr <- st$seg.med[ii]
         nm <- st$num.mark[ii]
-        g <- .getGenesFromSeg(chr, s, e, geneDB)
+        g <- .getGenesFromSeg(chr, s, e, geneDB, columns)
         if(is.null(g))
             return(NULL)
 
