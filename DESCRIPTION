@@ -1,7 +1,7 @@
 Package: rCGH
 Type: Package
 Title: Comprehensive Pipeline for Analyzing and Visualizing Array-Based CGH Data
-Version: 1.1.7
+Version: 1.2.0
 Date: 2015-11-17
 Authors@R: c(person(given="Frederic", family="Commo", role=c("aut", "cre"), 
     email="frederic.commo@gustaveroussy.fr"))
