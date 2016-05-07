@@ -1,26 +1,6 @@
 ################################################
 ## HELPER FUNCTIONS (ALL INTERNAL TO THE PACKAGE)
 ################################################
-##
-###############################################
-## initializing required annotation files
-###############################################
-#globalVariables(c("agilentDB", "geneDB", "hg19"), package="rCGH", add=TRUE)
-
-# Build the gene annotation DB
-# geneDB  <- genes(TxDb.Hsapiens.UCSC.hg19.knownGene, columns=c("gene_id"))
-# geneDB <- geneDB[order(as.vector(seqnames(geneDB)), start(geneDB))]
-
-# # Add missing NOTCH3 & NOTCH4
-# geneDB <- append(geneDB,
-#     GRanges(
-#         c("chr19", "chr6"),
-#         IRanges(c(15270444, 32162620), c(15311792, 32191844)),
-#         strand = c("-", "-"),
-#         gene_id = c(4854, 4855)
-#         )
-#     )
-# geneDB <- geneDB[order(as.vector(seqnames(geneDB)), start(geneDB))]
 
 .createGeneDB <- function(genome){
 
@@ -121,10 +101,11 @@
     gridGenomicBuild <- .getAnnot(aInfo, aNames, "Grid_GenomicBuild")
     ref <- 'Dual color hybridization'
 
-    return( c(barCode = barCode, gridName = gridName, 
+    return(
+        c(barCode = barCode, gridName = gridName, 
         scanDate = as.character(scanDate), programVersion = programVersion, 
-        gridGenomicBuild = gridGenomicBuild, reference = ref, 
-        analyseDate = format(Sys.Date(), "%Y-%m-%d")) )
+        gridGenomicBuild = gridGenomicBuild, reference = ref)
+        )
 }
 
 .readAgilentMatrix <- function(filePath, verbose){
@@ -333,29 +314,29 @@
 .readSNP6 <- function(filePath, useProbes, verbose){
     if(verbose) message('Reading information...')
     aInfo <- readLines(filePath, n = 750)
-    preamble <- any(grepl("#GenomeWideSNP_6", aInfo))
+    preamble <- any(grepl("GenomeWideSNP_6", aInfo))
 
     if(!preamble){
         arrayType <- barCode <- gridName <- scanDate <- programVersion <- NA
         ucsc <- ensembl <- gridGenomicBuild <- ref <- NA
     } else{
-        arrayType <- .getTagValue(aInfo, "#ArraySet")
-        barCode = NA
-        gridName <- .getTagValue(aInfo, "#state-annotation-file")
-        Date <- .getTagValue(aInfo, "#state-time-start")
+        arrayType <- .getTagValue(aInfo, "ArraySet")
+        barCode <- .getTagValue(aInfo, "array-barcode")
+        gridName <- .getTagValue(aInfo, "state-annotation-file")
+        Date <- .getTagValue(aInfo, "state-time-start")
         Date <- unlist(strsplit(Date, ' '))
-        scanDate = paste(Date[5], Date[2], Date[3])
-        programVersion <- .getTagValue(aInfo, "#option-program-version")
-        ucsc <- .getTagValue(aInfo, "#genome-version-ucsc")
-        ensembl <- .getTagValue(aInfo, "#genome-version-ncbi")
-        gridGenomicBuild <- paste(ucsc, ensembl, sep = '/')
-        ref <- .getTagValue(aInfo, "#state-reference-file")
+        scanDate <- paste(Date[5], Date[2], Date[3])
+        programVersion <- .getTagValue(aInfo, "option-program-version")
+        ucsc <- .getTagValue(aInfo, "genome-version-ucsc")
+        ensembl <- .getTagValue(aInfo, "genome-version-ncbi")
+        gridGenomicBuild <- sprintf("%s/GRCh%s", ucsc, ensembl)
+        #paste(ucsc, ensembl, sep = '/')
+        ref <- .getTagValue(aInfo, "state-reference-file")
     }
 
     infos <- c(platform=arrayType, barCode=barCode, gridName=gridName, 
         scanDate=scanDate, programVersion=programVersion, 
-        gridGenomicBuild=gridGenomicBuild, reference=ref, 
-        analyseDate=format(Sys.Date(), "%Y-%m-%d"))
+        gridGenomicBuild=gridGenomicBuild, reference=ref)
 
     startAt <- grep("ProbeSet", aInfo)
     cnSet <- .readSNP6Matrix(filePath, startAt, useProbes, verbose)
@@ -395,7 +376,7 @@
 
     return(cnSet)
 }
-    
+
 .getTagValue <- function(aInfo, tag){
     x <- aInfo[grep(tag, aInfo)]
     return(unlist(strsplit(x, '='))[2])
@@ -424,10 +405,10 @@
             "#%affymetrix-algorithm-param-state-reference-file")
     }
 
-    infos <- c( platform=arrayType, barCode=barCode, gridName=gridName, 
+    infos <- c(platform=arrayType, barCode=barCode, gridName=gridName, 
         scanDate=format(as.Date(scanDate), "%Y-%m-%d"), 
         programVersion=programVersion, gridGenomicBuild=gridGenomicBuild, 
-        reference=ref, analyseDate=format(Sys.Date(), "%Y-%m-%d"))
+        reference=ref)
 
     startAt <- grep("ProbeSetName", aInfo)
     cnSet <- .readCytoScanMatrix(filePath, startAt, useProbes, verbose)
@@ -508,6 +489,9 @@
     }
 
     ChrNum <- raw$ChrNum
+    if(any(is.na(ChrNum)))
+        stop("Some Chr do not have any annotation. Please, fix it or remove
+            the corresponding entries.")
     if(any(ChrNum == "X"))
         ChrNum[which(ChrNum == "X")] <- 23
     if(any(ChrNum == "Y"))
@@ -566,8 +550,6 @@
     if (length(x) < 3)
         stop("Vector length>2 needed for computation")
 
-#    tmp <- embed(x, 2)
-#    diffs <- tmp[,2]-tmp[,1]
     diffs <- diff(x)
     Q <- quantile(diffs, probs = c(.025, .975), na.rm = TRUE)
     diffs <- diffs[which(diffs>=Q[1] & diffs<=Q[2])]
@@ -599,7 +581,27 @@
     nCores
 }
 
-.modelLOH <- function(x, G, verbose){
+# .optimalG <- function(x, G, B = 10){
+#     minx <- min(x, na.rm = TRUE)
+#     maxx <- max(x, na.rm = TRUE)
+
+#     nG <- sapply(seq_len(B), function(b){
+#         model <- Mclust(x,
+#             G = G,
+#             prior = priorControl(scale = rep(1, max(G)),
+#                 mean = seq(minx, maxx, len = max(G))),
+#             control = emControl(tol = 1e-6, itmax = 1000)
+#             )
+#         model$G
+#         })
+#     if(is.list(nG))
+#         nG <- do.call(c, nG)
+#     optimalG <- median(nG, na.rm = TRUE)
+#     message("optimal G: ", optimalG)
+#     return(optimalG)
+# }
+
+.modelLOH <- function(x, G, S, verbose){
     
     if(length(x)<10)
         return(x)
@@ -612,7 +614,8 @@
     jj <- seq(2, length(x), by=2)
     xprim <- x[ii]
     
-    model <- Mclust(xprim, G=G)
+    # optimG <- .optimalG(xprim, G)
+    model <- Mclust(xprim, G = G)
     K <- model$classification
     N <- as.numeric(table(K))
     pars <- model$parameters
@@ -623,7 +626,7 @@
         n <- N[k]
         if(!is.na(n) && n>0){
             mu <- ifelse(abs(m[k])>1.5, 1.5*sign(m[k]), m[k])
-            xprim[K==k] <- rnorm(n, mu, 0.04)
+            xprim[K==k] <- rnorm(n, mu, S)
         }
     }
     x[ii] <- xprim
@@ -631,7 +634,8 @@
     
     return(x)
 }
-.modelLR <- function(x, G, verbose){
+
+.modelLR <- function(x, G, S, verbose){
     
     if(length(x)<10)
         return(x)
@@ -640,26 +644,45 @@
         NAs <- is.na(x)
         x[NAs] <- rnorm(sum(NAs), 0, 0.0033)
     }
-    
-    model <- Mclust(x, G=G)
+
+    minx <- min(x)
+    maxx <- max(x)
+    model <- Mclust(x, G = G,
+        prior = priorControl(
+            scale = rep(sd(x, na.rm = TRUE), max(G)),
+            mean = seq(minx, maxx, len = max(G)))
+        )
+
     K <- model$classification
-    N <- as.numeric(table(K))
     pars <- model$parameters
     m <- pars$mean
     s2 <- pars$variance$sigmasq
     if(length(s2) < length(m)) s2 <- rep(s2, length(m))
+
+    # newx <- rnorm(length(x), 0, sd(x)*.9)
+    # for(k in unique(K)){
+    #     n <- sum(K == k)
+    #     if(!is.na(n) && n > 0){
+    #         newx[K==k] <- newx[K==k] + m[k]
+    #     }
+    # }
+
+    # return(newx)
+
     for(k in unique(K)){
-        n <- N[k]
-        if(!is.na(n) && n>0){
+        n <- sum(K == k)
+        if(!is.na(n) && n > 0){
+            set.seed(111)
             x[K==k] <- rnorm(n, m[k], sqrt(s2[k])*.95)
         }
     }
-    
+
     return(x)
+    
 }
 
 .modelSignal <- function(signal, chr, G,
-    method=c("lr", "loh"), nCores, verbose){
+    method=c("lr", "loh"), alpha, S, nCores, verbose){
     
     options(warn = -1)
     
@@ -669,11 +692,11 @@
             loh={.model <- .modelLOH}
         )
     
-    alpha <- 2e3
-    if(method == "loh"){
-        signal <- scale(signal, scale=FALSE)
-        alpha <- 2.5e3
-    }
+    # alpha <- 2e3
+    # if(method == "loh"){
+    #     signal <- scale(signal, scale=FALSE)
+    #     alpha <- 2.5e3
+    # }
     
     ss <- split(signal, chr)
     
@@ -685,11 +708,11 @@
 
     newSignal <- mclapply(ss, function(sss, G, alpha){
         n <- length(sss)
-        l <- max(2, ceiling(n/alpha))
+        l <- max(10, ceiling(n/alpha))
         idx <- round(seq(0, n, len=l))
         S <- lapply(2:length(idx), function(jj){
             tmp <- sss[(idx[jj-1]+1):idx[jj]]
-            .model(tmp, G, verbose)
+            .model(tmp, G, S, verbose)
         } )
         return(do.call(c, S))
     }, G=G, alpha=alpha, mc.cores = nCores)
@@ -810,6 +833,7 @@
 
     return(adjustedLocs)
 }
+
 .getCloser <- function(sst, idx){
     if(idx==1){
         return(idx+1)
@@ -821,6 +845,7 @@
         return(i)
     }
 }
+
 .mergeSegments <- function(sst, i, j){
     if(j<i){
         sst$loc.end[j] <- sst$loc.end[i]
@@ -868,15 +893,44 @@
     return(st)
 }
 
-.probeSegValue <- function(segTable, use.medians){
-    segVal <- segTable$seg.med
-    if(use.medians){
-        segVal <- segTable$seg.med
-    }
+.probeSegValue <- function(segTable){
+    segValues <- segTable$seg.med
+    nMarks <- segTable$num.mark
 
-    nMark <- segTable$num.mark
-    output <- lapply(1:length(segVal), function(i){rep(segVal[i], nMark[i])})
-    return(do.call(c, output))
+    return(rep(segValues, times = nMarks))
+}
+
+.probeCopyValue <- function(segTable){
+    copies <- segTable$estimCopy
+    nMarks <- segTable$num.mark
+
+    return(rep(copies, times = nMarks))
+}
+
+.estimateRatio <- function(p, expect){
+
+    if(max(p, na.rm = TRUE) < 1e-3)
+        return(0)
+
+    return(2^expect[which.max(p)])
+}
+
+.estimateCopy <- function(st, ploidy, expect = log2(seq(1, 60)/2)){
+
+    P <- lapply(1:nrow(st), function(ii){
+        mi <- st$seg.med[ii]
+        if(mi>5)
+            return( c(rep(0, length(expect) - 1), 1) )
+        si <- st$probes.Sd[ii]
+        p <- sapply(expect, function(e){ dnorm(mi, e, si) })
+        return(p)
+        })
+
+    ratio <- sapply(P, function(p){ .estimateRatio(p, expect) })
+    copies <- ifelse(ratio == 0, 0, ifelse(ratio > 0, 2*ratio, -1/ratio))
+    st$estimCopy <- copies + (ploidy - 2)
+
+    return(st)
 }
 
 ###############################################
@@ -884,12 +938,15 @@
 ###############################################
 
 .cmValues <- function(segTable, HG){
+
     cmLocs <- .locateCM(segTable, HG)
     out <- lapply(cmLocs, function(locs){
         c(segTable$seg.med[locs[1]], segTable$seg.med[locs[2]])
         })
+    
     return(out)
 }
+
 .locateCM <- function(segTable, HG){
 
     chrs <- unique(segTable$chrom)
@@ -914,6 +971,7 @@
 
     return(cmLocs)
 }
+
 .relativeLog <- function(bygene, cmValues, HG){
     relativeLog <- lapply(1:length(cmValues), function(chr){
         tmp <- bygene[bygene$chr==chr, ]
@@ -926,6 +984,7 @@
         })
     return(do.call(c, relativeLog))
 }
+
 .bygeneToSegValues <- function(bygene, segTable){
     segValues <- lapply(seq_len(nrow(bygene)), function(ii){
         gene <- bygene$symbol[ii]
@@ -933,7 +992,7 @@
         Start <- bygene$chrStart[ii]
         End <- bygene$chrEnd[ii]
         if(is.na(Start) || is.na(End))
-            return(c(gene, rep(NA, 4)) )
+            return(NULL)
         
         ii <- which(segTable$chrom==chr &
                         segTable$loc.start<Start &
@@ -942,14 +1001,15 @@
                         segTable$loc.start<End &
                         End<segTable$loc.end)
         idx <- union(ii, jj)
-        if(is.null(idx))
+        if(is.null(idx) || length(idx) == 0)
             return(NULL)
         
         lrr <- segTable$seg.med[idx]
         l <- abs(segTable$loc.end[idx] - segTable$loc.start[idx])/1e3
         nm <- segTable$num.mark[idx]
-        cbind("symbol"=gene, "Log2Ratio"=lrr,
-            "num.mark"=nm, "segNum"=idx, "segLength(kb)"=l)
+        copy <- segTable$estimCopy[idx]
+        cbind("symbol" = gene, "Log2Ratio" = lrr, "num.mark" = nm,
+            "segNum" = idx, "segLength(kb)" = l, "estimCopy" = copy)
 
     })
     segValues <- do.call(rbind, segValues)
@@ -958,6 +1018,7 @@
     
     as.data.frame(segValues)
 }
+
 .getSegFromGene <- function(segTable, symbol, HG, geneDB, columns){
 
     symbol <- toupper(symbol)
@@ -979,9 +1040,11 @@
                         ), silent = TRUE)
         )
 
-    if(inherits(bySymbol, "try-error"))
-        stop(sprintf("\n'%s' not found.", symbol))
-    
+    if(inherits(bySymbol, "try-error")){
+        message(sprintf("\n'%s' not found.", symbol))
+        return(NULL)
+    }
+
     bySymbol <- bySymbol[!is.na(bySymbol$ENTREZID),]    
     entrez <- as.numeric(bySymbol$ENTREZID)
     byRange <- geneDB[geneDB$gene_id %in% entrez]
@@ -993,6 +1056,7 @@
     bygene <- merge(bygene, segValues, by = "symbol", all = TRUE)
     .addGenomeLoc(bygene, HG)
 }
+
 .getGenesFromSeg <- function(chr, Start, End, geneDB, columns){
     # chr: a integer, from 1 to 24
     # Start, End: numeric. Start/End segment position (from segmentation table)
@@ -1020,12 +1084,15 @@
         }
 
     suppressMessages(
-        bySymbol <- select(org.Hs.eg.db,
+        bySymbol <- try(select(org.Hs.eg.db,
                         keys=geneDB$gene_id[idx],
                         keytype='ENTREZID',
                         columns=cols
-                        )
+                        ), silent = TRUE)
         )
+    if(inherits(bySymbol, "try-error"))
+        return(NULL)
+
     byRange <- as.data.frame(geneDB[idx])
         
     geneList <- merge(bySymbol, byRange,
@@ -1033,6 +1100,7 @@
 
     .renameGeneList(geneList)
 }
+
 .renameGeneList <- function(geneList){
     colnames(geneList) <- tolower(colnames(geneList))
     oldNames <- c("genename", "map", "seqnames", "start", "end")
@@ -1067,7 +1135,7 @@
     # Render numeric
     renderNum <- c("chr", "chrStart", "chrEnd", "width", "Log2Ratio",
                     "num.mark", "segNum", "segLength(kb)", "relativeLog",
-                    "genomeStart")
+                    "genomeStart", "estimCopy")
     idx <- which(colnames(bygene) %in% renderNum)
     for(jj in idx){
         bygene[,jj] <- as.numeric(as.character(bygene[,jj]))
@@ -1075,7 +1143,8 @@
 
     bygene
 }
-.ByGene <- function(st, symbol, genome, columns, verbose){
+
+.ByGene <- function(segTable, symbol, genome, columns, verbose){
 
     hg18 <- hg18; hg19 <- hg19; hg38 <- hg38
 
@@ -1086,36 +1155,38 @@
 
     geneDB <- .createGeneDB(genome)
 
-    if(!"seg.med" %in% colnames(st))
-        st$seg.med <- st$seg.mean
+    if(!"seg.med" %in% colnames(segTable))
+        segTable$seg.med <- segTable$seg.mean
 
     if(!is.null(symbol))
-        return(.getSegFromGene(st, symbol, HG, geneDB, columns))
+        return(.getSegFromGene(segTable, symbol, HG, geneDB, columns))
 
     if(verbose) message("Creating byGene table...")
-    bygene <- lapply(seq_len(nrow(st)), function(ii){
-        chr <- st$chrom[ii]
-        s <- st$loc.start[ii]
-        e <- st$loc.end[ii]
-        l <- abs(e - s)/1e3
-        lrr <- st$seg.med[ii]
-        nm <- st$num.mark[ii]
-        g <- .getGenesFromSeg(chr, s, e, geneDB, columns)
+    bygene <- lapply(seq_len(nrow(segTable)), function(ii){
+        chr <- segTable$chrom[ii]
+        Start <- segTable$loc.start[ii]
+        End <- segTable$loc.end[ii]
+        l <- abs(End - Start)/1e3
+        lrr <- segTable$seg.med[ii]
+        nm <- segTable$num.mark[ii]
+        copy <- segTable$estimCopy[ii]
+        g <- .getGenesFromSeg(chr, Start, End, geneDB, columns)
+
         if(is.null(g))
             return(NULL)
 
-        cbind.data.frame(g,
-                        Log2Ratio = lrr,
-                        num.mark = nm,
-                        segNum=ii,
-                        "segLength(kb)"=round(l, 2)
+        cbind.data.frame(g, "Log2Ratio" = lrr, "num.mark" = nm,
+                        "segNum" = ii, "segLength(kb)" = round(l, 2),
+                        "estimCopy" = ifelse(is.null(copy), NA, copy)
                         )
     })
+
     bygene <- do.call(rbind, bygene)
-    cmValues <- .cmValues(st, HG)
+    cmValues <- .cmValues(segTable, HG)
     bygene$relativeLog <- .relativeLog(bygene, cmValues, HG)
     .addGenomeLoc(bygene, HG)
 }
+
 .getPatientId <- function(sampleId){
     gsub("(.*)_(.*)_(.*)+", "\\2", sampleId)
 }
@@ -1123,6 +1194,19 @@
 ###############################################
 ## helpers called in plot functions
 ###############################################
+.simulateLRfromST <-  function(st){
+    lr <- lapply(1:nrow(st), function(ii){
+        mu <- st$seg.mean[ii]
+        s <- min(st$probes.Sd[ii]/5, .1)
+#        s <- min(st$probes.Sd[ii]/15, .07)
+        n <- round(st$num.mark[ii]/10)
+        if(n>25){
+            rnorm(n, mu, s)
+        }
+    })
+    sort(do.call(c, lr))
+}
+
 .addDens <- function(x, m, s, p, best, ...){
     d <- dnorm(x, m, s)
     lines(x, d*p, lwd=3, ...)
@@ -1130,6 +1214,67 @@
     text(m, max(d*p)+.25, labels=format(m, digits = 2),
         cex=ifelse(best, 2, 1.25))
 }
+
+.makeTitle <- function(object, gain, loss, showCopy){
+    if(!showCopy){
+            out <- paste(getInfo(object, 'sampleName'),
+                        '-', getInfo(object, 'analysisDate'),
+                        '\nGain threshold: ', round(gain, 3),
+                        ' Loss threshold:', round(loss, 3)
+                        )
+    } else{
+        out <- paste(getInfo(object, 'sampleName'),
+                    '-', getInfo(object, 'analysisDate')
+                    )
+        }
+    return(out)
+}
+
+.mainPlot <- function(segTable, cumLen, cumCentr, pCol, ylim, Title){
+
+    N <- sum(segTable$num.mark, na.rm=TRUE)
+    w <- 0.1 # N/20e3
+    X <- lapply(1:nrow(segTable), function(i){
+        n <- ceiling(segTable$num.mark[i]*w)
+        n <- max(50, n)
+        x <- seq(segTable$loc.start[i], segTable$loc.end[i], len=n)
+        y <- rnorm(n, segTable$seg.med[i], segTable$probes.Sd[i]/4)
+        return(cbind(chr=segTable$chrom[i], loc=x, l2r=y))
+        })
+    X <- as.data.frame(do.call(rbind, X))
+
+    gPlot <- ggplot(data = X, aes_string(x="loc", y="l2r")) +
+            geom_point(pch = 19, cex = 0.1, col = pCol) +
+            geom_hline(yintercept = 0) +
+            geom_vline(xintercept = cumLen[1:23], color = 'grey30',
+                linetype = 2, size = 0.25) +
+            ggtitle(Title) +
+            xlab('Genomic position (bp)') + 
+            ylab('Log2(Ratio)') +
+            theme_bw() +
+            theme(
+                panel.grid.major = element_blank(),
+                panel.grid.minor = element_blank(),
+                plot.margin=unit(c(0,4,4,0),"mm"),
+                plot.title = element_text(lineheight=.8, size = rel(2.0),
+                    face="bold"),
+                axis.title.x = element_text(size = rel(1.8), angle = 00),
+                axis.text.x = element_text(size = rel(1.5)),
+                axis.title.y = element_text(size = rel(1.8), angle = 90),
+                axis.text.y = element_text(size = rel(1.5))
+                ) +
+            coord_cartesian(ylim = ylim) +
+            scale_y_continuous(breaks = seq(round(ylim[1]), round(ylim[2]), 
+                by = 0.5)) +
+            annotate(
+                'text',
+                x = c(-1e8, cumCentr[1:23]), y = rep(max(ylim)-0.2, 24),
+                label = c("Chr", seq(1, 23)), size = 4, colour = 'grey40'
+                )
+    return(gPlot)
+
+}
+
 .addSegments <- function(gPlot, subTable, GLcolors){
     gPlot <- gPlot + 
             geom_segment(
@@ -1143,30 +1288,184 @@
                     )
     gPlot
 }
-.addTagToPlot <- function(gPlot, bg){
+
+.plotCopy <- function(segTable, cumLen, cumCentr, GLcol, Title = NULL){
+
+    .getCol <- function(x, GLcol){
+        ifelse(x>2, GLcol[1], ifelse(x<2, GLcol[2], "black"))
+    }
+    .addSegments <- function(gPlot, segTable, GLcol){
+
+        idx <- which(abs(segTable$loc.end - segTable$loc.start) < 2e7)
+        if(length(idx)>0){
+            segTable$loc.start[idx] <- segTable$loc.start[idx] - 1e7
+            segTable$loc.end[idx] <- segTable$loc.end[idx] + 1e7
+        }
+
+        gPlot <- gPlot + 
+            geom_segment(
+                data = segTable,
+                aes_string(
+                    x = "loc.start", xend = "loc.end",
+                    y = "estimCopy", yend = "estimCopy"
+                ),
+                colour = .getCol(segTable$estimCopy, GLcol),
+                size = 2
+            )
+        gPlot
+    }
+
+    s <- segTable$loc.start[1]
+    e <- segTable$loc.end[nrow(segTable)]
+    m <- min(segTable$estimCopy, na.rm = TRUE)
+    M <- max(segTable$estimCopy, na.rm = TRUE)
+
+    if(M > 10){
+        M <- 10
+        idx <- which(segTable$estimCopy > M)
+        segTable$estimCopy[idx] <- M
+        yticks <- seq(0, 10, by = 2)
+        ytags <- c(sprintf("%s.0", seq(0, 8, by = 2)), "10+")
+    } else {
+        yticks <- seq(0, M + 2, by = 2)
+        ytags <- sprintf("%s.0", yticks)
+    }
+
+    X <- data.frame(loc = c(s, e), cp = c(m, M))
+
+
+    # if(M <= 10){
+    #     maxy <- M + 2
+    #     yticks <- seq(0, maxy, by = 2)
+    # } else if(M <= 20){
+    #     maxy <- M + 4
+    #     yticks <- seq(0, maxy, by = 4)
+    # } else{
+    #     maxy <- M + 5
+    #     yticks <- seq(0, maxy, by = 5)
+    # }
+
+    maxy <- M + 2
+    miny <- 0
+    ylim <- range(miny, maxy)
+
+    gPlot <- ggplot(data = X, aes_string(x="loc", y="cp")) +
+        geom_hline(yintercept = 2, size = 1) +
+        geom_hline(yintercept = yticks,
+                    color = 'grey30', linetype = 1, size = 0.25) +
+        geom_vline(xintercept = cumLen[1:23], color = 'red',
+                    linetype = 2, size = 0.25) +
+        ggtitle(Title) +
+        xlab('Genomic position (bp)') + 
+        ylab('Copy number') +
+        theme_bw() +
+        theme(
+            panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(),
+            plot.margin=unit(c(0,4,4,0),"mm"),
+            plot.title = element_text(lineheight=.8, size = rel(2.0),
+                                        face="bold"),
+            axis.title.x = element_text(size = rel(1.8), angle = 00),
+            axis.text.x = element_text(size = rel(1.5)),
+            axis.title.y = element_text(size = rel(1.8), angle = 90),
+            axis.text.y = element_text(size = rel(1.5))
+        ) +
+        coord_cartesian(ylim = ylim) +
+        scale_y_continuous(breaks = yticks,
+                            labels = ytags) +
+        annotate(
+            'text',
+            x = c(-1e8, cumCentr[1:23]), y = rep(max(ylim)-0.5, 24),
+            label = c("Chr", seq(1, 23)), size = 4, colour = 'grey40'
+        )
+
+    return(.addSegments(gPlot, segTable, GLcol))
+}
+
+.addTagToPlot <- function(gPlot, bg, showCopy){
     if(nrow(bg) == 0){
         message("No gene information available.")
         return(gPlot)
     }
 
-    genomeStart <- Log2Ratio <- NULL
+    ymin <- min(gPlot$coordinates$limits$y)
+    ymax <- max(gPlot$coordinates$limits$y)
+    e <- (ymax - ymin)*.15
 
-    ylim <- max(gPlot$coordinates$limits$y)
-    gPlot2 <- gPlot + 
-        geom_point(data = bg, aes(x=genomeStart, y=Log2Ratio), size = 5) +
+    if(showCopy){
+        bg$Log2Ratio <- as.numeric(as.character(bg$estimCopy))
+    }
+
+    bg <- data.frame(symbol = bg$symbol,
+                    genomeStart = bg$genomeStart,
+                    Log2Ratio = bg$Log2Ratio,
+                    Zero = rep(0, nrow(bg))
+                    )
+
+    genomeStart <- Log2Ratio <- Zero <- NULL
+
+    gPlot2 <- gPlot
+
+    for(ii in seq_len(nrow(bg)))
+        gPlot2 <- gPlot2 +
+            geom_segment(aes_string(x = bg$genomeStart[ii],
+                                    xend = bg$genomeStart[ii],
+                                    y = ifelse(showCopy, 2, 0),
+                                    yend = bg$Log2Ratio[ii]
+                                    ),
+                        colour = "purple",
+                        size = 0.5
+                        )
+
+    gPlot2 <- gPlot2 + 
         geom_point(data = bg, aes(x=genomeStart, y=Log2Ratio), size = 3,
-            color = "red") +
-        annotate( 'text',
-            x = bg$genomeStart,
-            y = ifelse(bg$Log2Ratio+1<ylim, bg$Log2Ratio+1, bg$Log2Ratio-1),
-            label = sprintf("%s\nLog2R: %s", bg$symbol,
-                format(bg$Log2Ratio, digits=2)
-                ),
-            size = 7, colour = 'grey25'
-        ) +
-        theme(legend.position="none")
+                    color = "green")
+
+#     gPlot2 <- gPlot + 
+#         geom_point(data = bg, aes(x=genomeStart, y=Log2Ratio), size = 5) +
+#         geom_point(data = bg, aes(x=genomeStart, y=Log2Ratio), size = 3,
+#                    color = "red")
+
+    gPlot2 <- gPlot2 + 
+            annotate( 'text',
+                    x = bg$genomeStart - 2.5e8,
+                    y = ifelse(bg$Log2Ratio+e/2 < ymax-e, bg$Log2Ratio+e/2,
+                                bg$Log2Ratio-e/2),
+                    label = sprintf("%s: %s", bg$symbol,
+                                    format(bg$Log2Ratio, digits = 2)
+                                    ),
+                    size = 6, colour = 'grey25'
+                    ) +
+            theme(legend.position="none")
+
     return(gPlot2)
 }
+
+
+# .addTagToPlot <- function(gPlot, bg){
+#     if(nrow(bg) == 0){
+#         message("No gene information available.")
+#         return(gPlot)
+#     }
+
+#     genomeStart <- Log2Ratio <- NULL
+
+#     ylim <- max(gPlot$coordinates$limits$y)
+#     gPlot2 <- gPlot + 
+#         geom_point(data = bg, aes(x=genomeStart, y=Log2Ratio), size = 5) +
+#         geom_point(data = bg, aes(x=genomeStart, y=Log2Ratio), size = 3,
+#             color = "red") +
+#         annotate( 'text',
+#             x = bg$genomeStart,
+#             y = ifelse(bg$Log2Ratio+1<ylim, bg$Log2Ratio+1, bg$Log2Ratio-1),
+#             label = sprintf("%s\nLog2R: %s", bg$symbol,
+#                 format(bg$Log2Ratio, digits=2)
+#                 ),
+#             size = 7, colour = 'grey25'
+#         ) +
+#         theme(legend.position="none")
+#     return(gPlot2)
+# }
 
 ###############################################
 ## helpers called in view.R

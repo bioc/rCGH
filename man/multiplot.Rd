@@ -12,9 +12,9 @@ If no allelic difference is available, the genomic profile only is displayed.
 }
 
 \usage{
-\S4method{multiplot}{rCGH}(object, symbol=NULL, gain=.5, loss=(-.5), minLen=10,
-    pCol = "grey50", GLcol = c("blue", "red3"),
-    L=matrix(seq(1, 12)), p=c(2/3, 1/3), Title=NULL, ylim=NULL)
+\S4method{multiplot}{rCGH}(object, symbol=NULL, gain=.5,
+    loss=(-.5), minLen=10, pCol = "grey50", GLcol = c("blue", "red3"),
+    L=matrix(seq(1, 12)), p=c(1/2, 1/4, 1/4), Title=NULL, ylim=NULL)
 }
 
 \arguments{
@@ -25,21 +25,21 @@ If no allelic difference is available, the genomic profile only is displayed.
     : character. A valid HUGO symbol (case insensitive).
     }
     \item{gain}{
-    : numeric. A gain threshold value (in \eqn{Log2(Ratio)}) from where
-    gained segments will be shown, in blue.
+    : numeric. A gain threshold value (in \eqn{Log2(Ratio)}). Segments greater,
+    or equal to, this value will be colored, as specified by \code{GLcol}.
     }
     \item{loss}{
-    : numeric.  A loss threshold value (in \eqn{Log2(Ratio)}) from where
-    lossed segments will be shown, in red.
+    : numeric.  A loss threshold value (in \eqn{Log2(Ratio)}). Segments lower,
+    or equal to, this value will be colored, as specified by \code{GLcol}.
     }
     \item{minLen}{
-    : numeric. The mininal length for a segment, in Kb.
+    : numeric. The mininal length for a segment, expressed in Kb.
     When \code{NULL} (default), segments are reported as they have been
-    computed with \code{\link{segmentCGH}}, segments shorter than the
+    computed by \code{\link{segmentCGH}}. Segments shorter than the
     specified value are re-merged otherwise.
     }
     \item{pCol}{
-    : string. The probe points color. DEfault is \code{"grey50"}.
+    : string. The probe points color. Default is \code{"grey50"}.
     }
     \item{GLcol}{
     : vector. A vector of 2 colors: the gained and lost segments colors,
@@ -47,16 +47,17 @@ If no allelic difference is available, the genomic profile only is displayed.
     losses.
     }
     \item{L}{
-    : matrix. A matrix defining how the layout is built. Default is 12 lines.
+    : matrix. A matrix defining the layout. Default is 12 lines.
     }
     \item{p}{
-    : numeric. The proportion of each plot in the plot window.
-    Default is \code{2/3, 1/3}, which corresponds to 8 and 4 lines for the 
-    genomic profile and the LOH plot, respectiviely.
+    : numeric. The proportion of each plot within the plot window.
+    Default is \code{1/2, 1/4, 1/4}, which corresponds to 6-4-4 lines for the 
+    genomic profile in Log2R, in copy number, and the LOH plot, respectiviely,
+    and given a 12-line layout.
     }
     \item{Title}{
-    : character string. A title for the density plot. If \code{NULL} (default),
-    the sample name (when exists) will be used.
+    : character string. A title for the plot. If \code{NULL} (default),
+    the sample name (when exists) is used.
     }
     \item{ylim}{
     : numeric. A vector of two values specifying the y-axis range.
@@ -87,11 +88,11 @@ filePath <- system.file("extdata", "Affy_cytoScan.cyhd.CN5.CNCHP.txt.bz2",
     package = "rCGH")
 cgh <- readAffyCytoScan(filePath, sampleName = "AffyScHD")
 cgh <- adjustSignal(cgh, nCores=1)
-cgh <- EMnormalize(cgh)
 cgh <- segmentCGH(cgh, nCores=1)
+cgh <- EMnormalize(cgh)
 
 # Static visalizations
-multiplot(cgh, "erbb2")
+multiplot(cgh, symbol = "erbb2")
 
 }
 

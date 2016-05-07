@@ -52,6 +52,7 @@ filePath <- system.file("extdata", "Affy_cytoScan.cyhd.CN5.CNCHP.txt.bz2",
     package = "rCGH")
 cgh <- readAffyCytoScan(filePath, sampleName = "AffyScHD")
 cgh <- adjustSignal(cgh, nCores=1)
+cgh <- segmentCGH(cgh, nCores=1)
 cgh <- EMnormalize(cgh)
 plotDensity(cgh)
 

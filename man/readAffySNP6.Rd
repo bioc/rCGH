@@ -13,7 +13,7 @@ Power Tools (APT) (see the \code{References} section).
 \usage{
 readAffySNP6(filePath, sampleName = NA, labName = NA,
     useProbes=c("snp", "cn", "all"), genome = c("hg19", "hg18", "hg38"),
-    verbose = TRUE)
+    ploidy = 2, verbose = TRUE)
 }
 
 \arguments{
@@ -33,6 +33,10 @@ readAffySNP6(filePath, sampleName = NA, labName = NA,
     \item{genome}{
     : string. The genome build to use. Supported genomes are \code{hg18},
     \code{hg19} (default), and \code{hg38}.
+    }
+    \item{ploidy}{
+    : numeric. A priori ploidy value, when known, to adjust the estimation
+    of copy numbers. Default is 2.
     }
     \item{verbose}{
     : logical. When \code{TRUE} (default), progress is printed.
@@ -59,7 +63,7 @@ Frederic Commo
 
 \seealso{
 \code{\link{readAgilent}}, \code{\link{readAffyCytoScan}},
-\code{\link{readGeneric}},
+\code{\link{readGeneric}}, \code{\link{readAffyOncoScan}},
 \code{\link{setInfo}}, \code{\link{getInfo}}
 }
 

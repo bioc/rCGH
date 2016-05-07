@@ -11,14 +11,18 @@ object of class \code{"\linkS4class{rCGH}"}.
 }
 
 \usage{
-\S4method{plotProfile}{rCGH}(object, symbol=NULL, gain=.5, loss=(-.5),
-    minLen = 10, pCol = "grey50", GLcol = c("blue", "red3"),
-    Title=NULL, ylim=NULL)
+\S4method{plotProfile}{rCGH}(object, showCopy=FALSE, symbol=NULL,
+    gain=.5, loss=(-.5), minLen = 10, pCol = "grey50",
+    GLcol = c("blue", "red3"), Title=NULL, ylim=NULL)
 }
 
 \arguments{
     \item{object}{
     : An object of class \code{"\linkS4class{rCGH}"}
+    }
+    \item{showCopy}{
+    : logical. To show the estimated copy numbers instead of the Log2Ratios.
+    default is \code{FALSE}.
     }
     \item{symbol}{
     : character. A valid HUGO symbol (case insensitive).
@@ -74,11 +78,14 @@ filePath <- system.file("extdata", "Affy_cytoScan.cyhd.CN5.CNCHP.txt.bz2",
     package = "rCGH")
 cgh <- readAffyCytoScan(filePath, sampleName = "AffyScHD")
 cgh <- adjustSignal(cgh, nCores=1)
-cgh <- EMnormalize(cgh)
 cgh <- segmentCGH(cgh, nCores=1)
+cgh <- EMnormalize(cgh)
 
-# Static visalizations
-plotProfile(cgh, "erbb2")
+# Static visalization using Log2Ratios
+plotProfile(cgh, symbol = "erbb2")
+
+# Static visalization using estimated copy numbers
+plotProfile(cgh, showCopy = TRUE, symbol = "erbb2")
 
 }
 

@@ -20,27 +20,29 @@ setGeneric("adjustSignal",
     def=function(object, Scale = TRUE, Cy = TRUE, GC = TRUE, Ref = "cy3",
     suppOutliers = TRUE, nCores = NULL, verbose = TRUE)
     standardGeneric("adjustSignal"))
-setGeneric("EMnormalize",
-    def=function(object, cut = c(.01, .99), G = 2:6, useN = 25e3,
-        peakThresh = 0.5, ksmooth = NA, mergeVal = 0.1, Title = NA,
-        verbose = TRUE) standardGeneric("EMnormalize"))
 setGeneric("segmentCGH",
     def=function(object, Smooth = TRUE, UndoSD = NULL, minLen = 10,
         nCores = NULL, verbose = TRUE) standardGeneric("segmentCGH"))
+setGeneric("EMnormalize",
+    def=function(object, G=2:6, peakThresh=0.5, mergeVal=0.1,
+            Title=NA, verbose=TRUE) standardGeneric("EMnormalize"))
 setGeneric("plotDensity",
     def=function(object, breaks = NULL, Title = NULL,...)
     standardGeneric("plotDensity"))
 setGeneric("plotProfile",
-    def=function(object, symbol = NULL, gain = .5, loss = (-.5), minLen = 10,
+    def=function(object, showCopy = FALSE, symbol = NULL,
+        gain = .5, loss = (-.5), minLen = 10,
         pCol = "grey50", GLcol = c("blue", "red3"), Title = NULL, ylim = NULL)
     standardGeneric("plotProfile")
     )
 setGeneric("plotLOH",
     def=function(object, Title = NULL) standardGeneric("plotLOH"))
 setGeneric("multiplot",
-    def=function(object, symbol = NULL, gain = .5, loss = (-.5), minLen = 10,
+    def=function(object, symbol = NULL, gain = .5,
+        loss = (-.5), minLen = 10,
         pCol = "grey50", GLcol = c("blue", "red3"),
-        L = matrix(seq(1, 12)), p = c(2/3, 1/3), Title = NULL, ylim = NULL)
+        L = matrix(seq(1, 12)),
+        p = c(1/2, 1/4, 1/4), Title = NULL, ylim = NULL)
     standardGeneric("multiplot")
     )
 setGeneric("view",

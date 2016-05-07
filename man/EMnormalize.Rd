@@ -15,35 +15,21 @@ See \code{\link[mclust]{Mclust}}.
 }
 
 \usage{
-\S4method{EMnormalize}{rCGH}(object, cut = c(0.01, 0.99), G = 2:6, useN = 25e3,
-peakThresh = 0.5, ksmooth = NA, mergeVal = 0.1, Title = NA, verbose=TRUE)
+\S4method{EMnormalize}{rCGH}(object, G=2:6, peakThresh=0.5, mergeVal=0.1,
+            Title=NA, verbose=TRUE)
 }
 
 \arguments{
     \item{object}{
     : An object of class \code{"\linkS4class{rCGH}"}
     }
-    \item{cut}{
-    : numeric. A vector of 2 alpha values (between 0 and 1). Log2Ratios outside
-    the corresponding quantiles will be excluded for the gaussian mixture
-    estimation. Default quantiles are \eqn{q_{0.01}} and \eqn{q_{0.99}}.
-    }
     \item{G}{
     : numeric. The number of groups to test during the gaussian mixture
     estimation. Default is from 2 to 6.
     }
-    \item{useN}{
-    : numeric. The number of probes to use for estimating the mixture 
-    parameters. Default is 25e3.
-    }
     \item{peakThresh}{
     : numeric. The proportion of the highest peak to consider as a peak
     selection threshold. Default is 0.5.
-    }
-    \item{ksmooth}{
-    : numeric. A smoothing value applied to Log2Ratios before modeling the
-    gaussian mixture. When \code{NA} (default) \code{ksmooth} is estimated from
-    the median absolute deviation of the Log2Ratios.
     }
     \item{mergeVal}{
     : numeric. Populations with means closer than \code{mergeVal} will be
@@ -91,6 +77,7 @@ filePath <- system.file("extdata", "Affy_cytoScan.cyhd.CN5.CNCHP.txt.bz2",
     package = "rCGH")
 cgh <- readAffyCytoScan(filePath, sampleName = "AffyScHD")
 cgh <- adjustSignal(cgh, nCores=1)
+cgh <- segmentCGH(cgh, nCores=1)
 cgh <- EMnormalize(cgh)
 getParam(cgh)
 

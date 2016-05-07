@@ -75,7 +75,6 @@ filePath <- system.file("extdata", "Affy_cytoScan.cyhd.CN5.CNCHP.txt.bz2",
     package = "rCGH")
 cgh <- readAffyCytoScan(filePath, sampleName = "AffyScHD")
 cgh <- adjustSignal(cgh, nCores=1)
-cgh <- EMnormalize(cgh)
 cgh <- segmentCGH(cgh, nCores=1)
 st <- getSegTable(cgh)
 head(st)

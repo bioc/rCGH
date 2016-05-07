@@ -1,168 +1,131 @@
 setMethod(f="plotDensity",
-            signature="rCGH",
-            definition=function(object, breaks=NULL, Title=NULL, ...){
+        signature="rCGH",
+        definition=function(object, breaks=NULL, Title=NULL, ...){
 
-                if(!.validrCGHObject(object)) return(NULL)
+            if(!.validrCGHObject(object)) return(NULL)
 
-                pars <- getParam(object)
-                cut <- pars$LRcut
-                correct <- pars$correctionValue
-                ksmooth <- pars$ksmooth
-                nG <- pars$nPeak
-                mu <- pars$peakMeans
-                s2 <- pars$peakSigmaSq
-                p <- pars$peakProp
-                best <- pars$centralPeak
+            pars <- getParam(object)
+            correct <- pars$correctionValue
+            ksmooth <- pars$ksmooth
+            nG <- pars$nPeak
+            mu <- pars$peakMeans
+            s2 <- pars$peakSigmaSq
+            p <- pars$peakProp
+            best <- pars$centralPeak
 
-                cnSet <- getCNset(object)
-                LR <- cnSet$Log2Ratio + correct
-                Q <- quantile(LR, probs = cut, na.rm=TRUE)
-                LR <- LR[LR>Q[1] & LR<Q[2]]
-                runLR <- runmed(LR, k = ksmooth)
+            st <- getSegTable(object)
+            if(nrow(st) == 0){
+                stop("Please run the segmentation step before centralizing.")
+            }
 
-                if(is.null(Title)){
-                    Title <- sprintf("%s\nCorrection value = %s",
+            simulLR <- .simulateLRfromST(st)
+            simulLR <- simulLR + correct
+            m <- min(simulLR, na.rm = TRUE) - .1
+            M <- max(simulLR, na.rm = TRUE) + .1
+            simulLR <- c(m, simulLR, M)
+
+            if(is.null(Title)){
+                Title <- sprintf("%s\nCorrection value = %s",
                                 getInfo(object, 'sampleName'),
-                                round(correct, 3))
-                }
+                                round(correct, 3)
+                                )
+            }
 
-                x <- seq(min(LR, na.rm=TRUE), max(LR, na.rm=TRUE), len=1000)
-                if(is.null(breaks))
-                    breaks <- floor(log10(length(runLR))*50)
+            if(is.null(breaks))
+                breaks <- floor(log10(length(simulLR))*50)
 
-                h <- hist(runLR, breaks=breaks, plot=FALSE)
-                plot(h, freq=FALSE, border="grey50",
-                    ylim=range(0, max(h$density)*1.35),
-                    xlab=expression(Log[2](Ratio)), main=Title, ...)
-                for(ii in seq_len(nG)){
-                    col <- rgb(ii/nG, 0.2, (nG-ii)/nG,
-                                ifelse(ii==best, .75, .25))
-                    mu_i <- mu[ii]; s_i <- sqrt(s2[ii]); p_i <- p[ii]
-                    .addDens(x, mu_i, s_i, p_i, best=ii==best, col=col)
-                }
+            h <- hist(simulLR, breaks = breaks, plot = FALSE)
+            plot(h, freq = FALSE, border = "grey50",
+                    ylim = range(0, max(h$density)*1.35),
+                    xlab = expression(Log[2](Ratio)), main=Title, ...)
+            for(ii in seq_len(nG)){
+                col <- rgb(ii/nG, 0.2, (nG-ii)/nG, ifelse(ii==best, .75, .25))
+                mu_i <- mu[ii]; s_i <- sqrt(s2[ii]); p_i <- p[ii]
+                .addDens(simulLR, mu_i, s_i, p_i, best = ii==best, col = col)
+            }
         }
 )
 
 setMethod(f="plotProfile",
-    signature="rCGH",
-    definition=function(object, symbol=NULL, gain=.5, loss=(-.5), minLen = 10,
-        pCol = "grey50", GLcol = c("blue", "red3"), Title=NULL, ylim=NULL){
+        signature="rCGH",
+        definition=function(object, showCopy = FALSE, symbol=NULL,
+                        gain=.5, loss=(-.5), minLen = 10,
+                        pCol = "grey50", GLcol = c("blue", "red3"),
+                        Title=NULL, ylim=NULL){
 
-        if(!.validrCGHObject(object))
-            return(NULL)
+            if(!.validrCGHObject(object))
+                return(NULL)
 
-        if(!is.null(ylim) && !all(is.numeric(ylim)))
-            stop("ylim must be numeric.\n")
+            if(!is.null(ylim) && !all(is.numeric(ylim)))
+                stop("ylim must be numeric.\n")
 
-        if(!is.null(ylim) && length(ylim)!=2)
-            stop("'ylim' must be a vector of 2 values or let to NULL to use
-                the full range of values.\n")
+            if(!is.null(ylim) && length(ylim)!=2)
+                stop("'ylim' must be a vector of 2 values or let to NULL to use
+                    the full range of values.\n")
 
-        if(is.null(GLcol)){
-            GLcol <- c("blue", "red3")
-            warning("'GLcol' cannot be NULL. 'blue/red' has been used.")
-        }
-
-        if(length(GLcol) < 2)
-            warning("You specified less than 2 colors for 'GLcol'.
-                Gains only have been colored.")
-
-        if(length(GLcol) > 2){
-            warning("You specified more than 2 colors for 'GLcol'.
-                Only the 2 first have been used.")
-        }
-
-        hg18 <- hg18; hg19 <- hg19; hg38 <- hg38
-
-        HG <- switch(getInfo(object, "genome"),
-            hg18 = hg18, hg19 = hg19, hg38 = hg38)
-
-        segTable <- getSegTable(object, minLen)
-        if(nrow(segTable)==0){
-            message("No data available, yet.")
-            return(NULL)
-        }
-        s = 4
-#        myBlue <- rgb(0, 0.45, 1, 1)
-
-        segTable <- segTable[which(segTable$chrom != 24),]
-        segTable <- .convertLoc(segTable, HG)
-
-        cumLen <- HG$cumlen[1:23]
-
-        if(is.null(ylim)){
-            miny <- max(-2.5, min(segTable$seg.med, na.rm=TRUE)) - .75
-            maxy <- max(2, max(segTable$seg.med, na.rm=TRUE)) + .75
-            ylim <- range(miny, maxy)
-        }
-
-        idx <- which(segTable$seg.med<= loss | segTable$seg.med>= gain)
-        subTable <- segTable[idx,]
-        GLcolors <- ifelse(subTable$seg.med<= loss, GLcol[2],
-                            ifelse(subTable$seg.med>= gain, GLcol[1], NA))
-
-        if(is.null(Title)){
-            Title = paste(getInfo(object, 'sampleName'),
-                '-', getInfo(object, 'analyseDate'),
-                '\nGain threshold: ', round(gain, 3),
-                ' Loss threshold:', round(loss, 3))
-        }
-
-        platform <- getInfo(object, "platform")
-        N <- sum(segTable$num.mark, na.rm=TRUE)
-        w <- N/20e3
-        X <- lapply(1:nrow(segTable), function(i){
-            n <- ceiling(segTable$num.mark[i]/w)
-            n <- max(50, n)
-            x <- seq(segTable$loc.start[i], segTable$loc.end[i], len=n)
-            y <- rnorm(n, segTable$seg.med[i], segTable$probes.Sd[i]/s)
-            return(cbind(chr=segTable$chrom[i], loc=x, l2r=y))
-            })
-        X <- as.data.frame(do.call(rbind, X))
-
-        cumCentr <- 1/2*HG$length[1:23] + cumLen
-
-        # main plot
-        gPlot <- ggplot(data = X, aes_string(x="loc", y="l2r")) +
-            geom_point(pch = 19, cex = 0.1, col = pCol) +
-            geom_hline(yintercept = 0) +
-            geom_vline(xintercept = cumLen[1:23], color = 'grey30',
-                linetype = 2, size = 0.25) +
-            ggtitle(Title) +
-            xlab('Genomic position (bp)') + 
-            ylab('Log2(Ratio)') +
-            theme_bw() +
-            theme(
-                panel.grid.major = element_blank(),
-                panel.grid.minor = element_blank(),
-                plot.margin=unit(c(0,4,4,0),"mm"),
-                plot.title = element_text(lineheight=.8, size = rel(2.0),
-                    face="bold"),
-                axis.title.x = element_text(size = rel(1.8), angle = 00),
-                axis.text.x = element_text(size = rel(1.5)),
-                axis.title.y = element_text(size = rel(1.8), angle = 90),
-                axis.text.y = element_text(size = rel(1.5))
-                ) +
-            coord_cartesian(ylim = ylim) +
-            scale_y_continuous(breaks = seq(round(ylim[1]), round(ylim[2]), 
-                by = 0.5)) +
-            annotate(
-                'text',
-                x = c(-1e8, cumCentr[1:23]), y = rep(max(ylim)-0.2, 24),
-                label = c("Chr", seq(1, 23)), size = 4, colour = 'grey40'
-                )
-
-        if(nrow(subTable)>0)
-            gPlot <- .addSegments(gPlot, subTable, GLcolors)
-
-        if(!is.null(symbol)){
-            bg <- byGeneTable(getSegTable(object, minLen),
-                symbol, getInfo(object, "genome"), NA, FALSE)
-            return(.addTagToPlot(gPlot, bg))
+            if(is.null(GLcol)){
+                GLcol <- c("blue", "red3")
+                warning("'GLcol' cannot be NULL. 'blue/red' has been used.")
             }
 
-        return(gPlot)
-    }
+            if(length(GLcol) < 2)
+                warning("You specified less than 2 colors for 'GLcol'.
+                        Gains only have been colored.")
+
+            if(length(GLcol) > 2){
+                warning("You specified more than 2 colors for 'GLcol'.
+                        Only the 2 first have been used.")
+            }
+            
+            hg18 <- hg18; hg19 <- hg19; hg38 <- hg38
+
+            HG <- switch(getInfo(object, "genome"),
+                        hg18 = hg18, hg19 = hg19, hg38 = hg38)
+            cumLen <- HG$cumlen[1:23]
+            cumCentr <- 1/2*HG$length[1:23] + cumLen
+
+            if(is.null(Title)){
+                Title <- .makeTitle(object, gain, loss, showCopy)
+            }
+            
+            segTable <- getSegTable(object, minLen)
+            if(nrow(segTable)==0){
+                message("No data available, yet.")
+                return(NULL)
+            }
+
+            segTable <- segTable[which(segTable$chrom != 24),]
+            segTable <- .convertLoc(segTable, HG)
+
+            if(showCopy){
+                gPlot <- .plotCopy(segTable, cumLen, cumCentr, GLcol, Title)
+            } else{
+                if(is.null(ylim)){
+                    miny <- max(-2.5, min(segTable$seg.med, na.rm=TRUE)) - .75
+                    maxy <- max(2, max(segTable$seg.med, na.rm=TRUE)) + .75
+                    ylim <- range(miny, maxy)
+                }
+                idx <- which(segTable$seg.med<= loss | segTable$seg.med>= gain)
+                subTable <- segTable[idx,]
+                GLcolors <- ifelse(subTable$seg.med<= loss, GLcol[2],
+                                ifelse(subTable$seg.med>= gain, GLcol[1], NA)
+                                )
+                                
+                # main plot
+                gPlot <- .mainPlot(segTable, cumLen, cumCentr, pCol,
+                                    ylim, Title)
+                if(nrow(subTable)>0)
+                    gPlot <- .addSegments(gPlot, subTable, GLcolors)
+            }
+            
+            if(!is.null(symbol)){
+                bg <- byGeneTable(getSegTable(object, minLen),
+                                symbol, getInfo(object, "genome"), NA, FALSE)
+                gPlot <- .addTagToPlot(gPlot, bg, showCopy)
+            }
+        
+            return(gPlot)
+        }
 )
 
 setMethod(f="plotLOH",
@@ -190,7 +153,7 @@ setMethod(f="plotLOH",
 
         if(is.null(Title)){
             Title = paste(getInfo(object, 'sampleName'),
-                '-', getInfo(object, 'analyseDate'))
+                '-', getInfo(object, 'analysisDate'))
         }
 
         ss <- split(snpSet, snpSet$ChrNum)
@@ -262,43 +225,63 @@ setMethod(f="plotLOH",
 )
 
 setMethod(f="multiplot",
-    signature="rCGH",
-    definition=function(object, symbol=NULL, gain=.5, loss=(-.5), minLen = 10,
-        pCol = "grey50", GLcol = c("blue", "red3"),
-        L=matrix(seq(1, 12)), p=c(2/3, 1/3), Title=NULL, ylim=NULL){
+        signature="rCGH",
+        definition=function(object, symbol=NULL, gain=.5,
+                            loss=(-.5), minLen = 10,
+                            pCol = "grey50", GLcol = c("blue", "red3"),
+                            L=matrix(seq(1, 12)), p=c(1/2, 1/4, 1/4),
+                            Title=NULL, ylim=NULL){
 
-    if(sum(p)!=1)
-        stop("Proportions in 'p' must sum to 1.\n")
+            if(sum(p)!=1)
+                stop("Proportions in 'p' must sum to 1.\n")
 
-    # To initialize the plot window.
-#    plot.new()
-#    dev.off()
+            n <- nrow(L)
 
-    n <- nrow(L)
+            plot1 <- plotProfile(object, showCopy = FALSE, symbol, gain, loss,
+                                minLen, pCol, GLcol, Title, ylim)
 
-    plot1 <- plotProfile(object, symbol, gain, loss, minLen, pCol, GLcol,
-        Title, ylim)
-    if(is.null(plot1))
-        stop("Nothing to plot.\n")
+            if(is.null(plot1))
+                stop("Nothing to plot.\n")
 
-    if(!is.null(Title))
-        plot1 <- plot1 + ggtitle(Title)
-    
-    plot2 <- plotLOH(object)
-    
-    if(is.null(plot2))
-        print(plot1)
-    else{
-        plot2 <- plot2 + ggtitle("")
+            if(!is.null(Title))
+                plot1 <- plot1 + ggtitle(Title)
 
-        grid.newpage()
-        pushViewport(viewport(layout = grid.layout(nrow(L), ncol(L))))
-        print(plot1, vp=viewport(layout.pos.row = 1:floor(n*p[1]),
-            layout.pos.col = 1))
-        print(plot2, vp=viewport(layout.pos.row = floor(n*p[1]+1):n,
-            layout.pos.col = 1))
-    }
-}
+            if(p[2] > 0){
+                plot2 <- plotProfile(object, showCopy = TRUE, symbol, gain,
+                    loss, minLen, pCol, GLcol, Title = "", ylim)
+                } else {
+                    plot2 <- NULL
+                }
+
+            if(p[3] > 0){
+                plot3 <- plotLOH(object)
+                } else {
+                    plot3 <- NULL
+                }
+
+            if(is.null(plot3)){
+                grid.newpage()
+                pushViewport(viewport(layout = grid.layout(nrow(L), ncol(L))))
+                n1 <- floor(n*(p[1]+p[2]))
+                print(plot1, vp=viewport(layout.pos.row = 1:n1,
+                                        layout.pos.col = 1))
+                print(plot2, vp=viewport(layout.pos.row = (n1+1):n,
+                                        layout.pos.col = 1))
+            } else {
+                plot3 <- plot3 + ggtitle("")
+
+                grid.newpage()
+                pushViewport(viewport(layout = grid.layout(nrow(L), ncol(L))))
+                n1 <- floor(n*p[1])
+                n2 <- n1 + floor(n*p[2])
+                print(plot1, vp=viewport(layout.pos.row = 1:n1,
+                                        layout.pos.col = 1))
+                print(plot2, vp=viewport(layout.pos.row = (n1+1):n2,
+                                        layout.pos.col = 1))
+                print(plot3, vp=viewport(layout.pos.row = (n2+1):n,
+                                        layout.pos.col = 1))
+            }
+        }
 )
 
 setMethod(f="view",

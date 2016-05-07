@@ -55,7 +55,7 @@ test_getter <- function(){
     checkTrue(
         getInfo(cgh, "fileName") == "Affy_cytoScan.cyhd.CN5.CNCHP.txt.bz2" &&
         getInfo(cgh, "sampleName") == "AffyScHD" &&
-        getInfo(cgh, "analyseDate") == format(Sys.Date(), "%Y-%m-%d") &&
+        getInfo(cgh, "analysisDate") == format(Sys.Date(), "%Y-%m-%d") &&
         getInfo(cgh, "rCGH_version") == as.character(packageVersion("rCGH"))
         )
 }
@@ -77,6 +77,15 @@ test_Pipeline <- function(){
     if(is.null(pars$MAD))
         stop("Error when Adjusting: MAD is missing.")
 
+    # Segmenting
+    cgh <- segmentCGH(cgh, nCores=1)
+    pars <- getParam(cgh)
+    st <- getSegTable(cgh)
+    if(is.null(pars$nSegment))
+        stop("Error when segmenting: nSegment is missing.")
+    if(nrow(st)==0)
+        stop("Error when segmenting: empty segmentation table.")
+
     # Centering
     cgh <- EMnormalize(cgh)
     pars <- getParam(cgh)
@@ -87,17 +96,7 @@ test_Pipeline <- function(){
     if(is.null(pars$correctionValue))
         stop("Error when centralizing: correctionValue is missing.")
 
-    # Segmenting
-    cgh <- segmentCGH(cgh, nCores=1)
-    pars <- getParam(cgh)
-    st <- getSegTable(cgh)
-    if(is.null(pars$nSegment))
-        stop("Error when segmenting: nSegment is missing.")
-    if(nrow(st)==0)
-        stop("Error when segmenting: empty segmentation table.")
-
     # Extracting genes
-#    bg <- byGeneTable(cgh)
     bg <- byGeneTable(st)
     if(nrow(bg)==0)
         stop("Error when extracting genes: empty gene table.")

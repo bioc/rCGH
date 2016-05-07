@@ -50,14 +50,14 @@ filePath <- system.file("extdata", "Affy_cytoScan.cyhd.CN5.CNCHP.txt.bz2",
     package = "rCGH")
 cgh <- readAffyCytoScan(filePath, sampleName = "AffyScHD")
 cgh <- adjustSignal(cgh, nCores=1)
-cgh <- EMnormalize(cgh)
 cgh <- segmentCGH(cgh, nCores=1)
+cgh <- EMnormalize(cgh)
 
-# Default peak choice center the profile on the 2nd peak
+# Default peak choice center the profile on the 1st peak
 plotDensity(cgh)
 
-# Recentering on the 3rd density peak
-recenter(cgh) <- 3
+# Recentering on the 2nd density peak
+recenter(cgh) <- 2
 plotDensity(cgh)
 
 }
